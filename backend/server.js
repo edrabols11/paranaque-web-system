@@ -13,7 +13,15 @@ const aiRoutes = require('./routes/aiRoutes');
 const app = express();
 const PORT = process.env.PORT || 5050;
 
-app.use(cors());
+// Enhanced CORS configuration
+const corsOptions = {
+  origin: ['https://paranaledge-y7z1.onrender.com', 'http://localhost:3000', 'http://localhost:5050'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
