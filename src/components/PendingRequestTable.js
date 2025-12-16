@@ -19,7 +19,7 @@ const PendingRequestTable = () => {
   const fetchPendingRequest = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5050/api/transactions/pending-requests?limit=10000');
+      const response = await fetch('https://paranaledge-y7z1.onrender.com/api/transactions/pending-requests?limit=10000');
       const data = await response.json();
       if (response.ok) {
         setPendingRequests(data.transactions || []);
@@ -40,7 +40,7 @@ const PendingRequestTable = () => {
       return;
     }
     try {
-      const response = await fetch(`http://localhost:5050/api/transactions/approve-borrow/${borrowId}`, {
+      const response = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/approve-borrow/${borrowId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -75,7 +75,7 @@ const PendingRequestTable = () => {
       return;
     }
     try {
-      const response = await fetch(`http://localhost:5050/api/transactions/reject-borrow/${selectedBorrow._id}`, {
+      const response = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/reject-borrow/${selectedBorrow._id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -103,7 +103,7 @@ const PendingRequestTable = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5050/api/transactions/approve-reservation/${reservationId}`, {
+      const response = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/approve-reservation/${reservationId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -134,7 +134,7 @@ const PendingRequestTable = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5050/api/transactions/reject-reservation/${selectedReservation._id}`, {
+      const response = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/reject-reservation/${selectedReservation._id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

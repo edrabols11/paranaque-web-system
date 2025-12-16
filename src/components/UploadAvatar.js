@@ -22,7 +22,7 @@ function UploadAvatar(email, user) {
             console.log("File ready to be uploaded:", imageBase64);
             console.log("Email: ", email.email);
             try {
-                const res = await fetch(`http://localhost:5050/api/auth/profile/upload-image/${email.email}`, {
+                const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/auth/profile/upload-image/${email.email}`, {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ profilePicture: imageBase64 })

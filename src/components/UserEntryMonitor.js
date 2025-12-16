@@ -17,7 +17,7 @@ const UserEntryMonitor = () => {
   const fetchUserEntries = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5050/api/logs');
+      const response = await fetch('https://paranaledge-y7z1.onrender.com/api/logs');
       const data = await response.json();
       
       if (response.ok) {

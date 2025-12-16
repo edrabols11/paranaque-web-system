@@ -13,7 +13,7 @@ const BorrowedBooksTable = () => {
       setLoading(true);
 
       // Fetch regular borrowed books
-      const borrowedRes = await fetch("http://localhost:5050/api/books/borrowed?limit=10000");
+      const borrowedRes = await fetch("https://paranaledge-y7z1.onrender.com/api/books/borrowed?limit=10000");
       const borrowedData = await borrowedRes.json();
 
       if (borrowedRes.ok) {
@@ -38,7 +38,7 @@ const BorrowedBooksTable = () => {
   const handleReturn = async (bookId, userEmail) => {
     console.log("handleReturn Clicked!", bookId, userEmail);
     try {
-      const res = await fetch(`http://localhost:5050/api/books/return/${bookId}`, {
+      const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/books/return/${bookId}`, {
         method: "PUT",
         headers: {
           'Content-Type': 'application/json'

@@ -17,7 +17,7 @@ const BooksTable = () => {
   const fetchReservedBooks = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5050/api/books/?limit=10000');
+      const response = await fetch('https://paranaledge-y7z1.onrender.com/api/books/?limit=10000');
       const data = await response.json();
       if (response.ok) {
         setBooks(data.books || []);
@@ -68,7 +68,7 @@ const BooksTable = () => {
   const archiveBook = async (bookId) => {
     if (window.confirm("Are you sure you want to archive this book?")) {
       try {
-        const res = await fetch(`http://localhost:5050/api/books/archive/${bookId}`, {
+        const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/books/archive/${bookId}`, {
           method: 'PUT',
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status: "Archived" }),

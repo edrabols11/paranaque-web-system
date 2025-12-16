@@ -15,7 +15,7 @@ const TransactionsTable = () => {
   const fetchTransactions = async () => {
     try {
       console.log('Fetching transactions...'); // Debug log
-      const response = await fetch('http://localhost:5050/api/transactions?limit=10000');
+      const response = await fetch('https://paranaledge-y7z1.onrender.com/api/transactions?limit=10000');
       const data = await response.json();
       console.log('Transactions data:', data); // Debug log
       if (response.ok) {

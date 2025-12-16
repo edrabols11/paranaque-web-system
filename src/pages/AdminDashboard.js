@@ -68,7 +68,7 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
-    fetch("http://localhost:5050/api/logs")
+    fetch("https://paranaledge-y7z1.onrender.com/api/logs")
       .then((res) => res.json())
       .then((data) => {
         console.log('Fetched logs:', data);
@@ -117,7 +117,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const response = await fetch("http://localhost:5050/api/books");
+        const response = await fetch("https://paranaledge-y7z1.onrender.com/api/books");
         const data = await response.json();
         const availableBooks = data.books.filter((book) => !book.archived);
         setStoredBooks(availableBooks);

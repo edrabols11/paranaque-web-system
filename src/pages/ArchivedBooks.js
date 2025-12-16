@@ -16,7 +16,7 @@ const ArchivedBooks = () => {
   useEffect(() => {
     const fetchArchivedBooks = async () => {
       try {
-        const res = await fetch('http://localhost:5050/api/books?status=Archived');
+        const res = await fetch('https://paranaledge-y7z1.onrender.com/api/books?status=Archived');
         const data = await res.json();
         if (res.ok) {
           setArchivedBooks(data.books);
@@ -49,7 +49,7 @@ const ArchivedBooks = () => {
   const handleDelete = async (bookId) => {
     if (window.confirm("Are you sure you want to permanently delete this book?")) {
       try {
-        const res = await fetch(`http://localhost:5050/api/books/${bookId}`, {
+        const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/books/${bookId}`, {
           method: "DELETE",
         });
         const data = await res.json();
@@ -71,7 +71,7 @@ const ArchivedBooks = () => {
   const handleReturnToStocks = async (bookId) => {
     if (window.confirm("Are you sure you want to return this book to stocks?")) {
       try {
-        const res = await fetch(`http://localhost:5050/api/books/archive/${bookId}`, {
+        const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/books/archive/${bookId}`, {
           method: 'PUT',
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status: "Available" }),

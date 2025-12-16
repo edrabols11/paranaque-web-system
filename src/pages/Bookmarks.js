@@ -21,7 +21,7 @@ const Bookmarks = () => {
       }
 
       try {
-        const res = await fetch(`http://localhost:5050/api/bookmarks/get?email=${userEmail}`, {
+        const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/bookmarks/get?email=${userEmail}`, {
           method: "GET",
           headers: { "Content-Type": "application/json" }
         });
@@ -48,7 +48,7 @@ const Bookmarks = () => {
   const removeBookmark = async (bookId) => {
     try {
       try {
-        const res = await fetch("http://localhost:5050/api/bookmarks/delete", {
+        const res = await fetch("https://paranaledge-y7z1.onrender.com/api/bookmarks/delete", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ book_id: bookId, email: userEmail }),
@@ -83,7 +83,7 @@ const Bookmarks = () => {
   const clearAllBookmarks = async() => {
     if (window.confirm("Are you sure you want to clear all bookmarks?")) {
       try {
-        const res = await fetch("http://localhost:5050/api/bookmarks/delete/all", {
+        const res = await fetch("https://paranaledge-y7z1.onrender.com/api/bookmarks/delete/all", {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: userEmail }),

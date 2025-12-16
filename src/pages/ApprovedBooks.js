@@ -14,7 +14,7 @@ const ApprovedBooks = () => {
 
   const fetchApprovedBooks = async () => {
     try {
-      const response = await fetch('http://localhost:5050/api/approved-books');
+      const response = await fetch('https://paranaledge-y7z1.onrender.com/api/approved-books');
       if (!response.ok) {
         throw new Error('Failed to fetch approved books');
       }

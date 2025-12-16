@@ -8,7 +8,7 @@ const Genres = () => {
   useEffect(() => {
     // Fetch all books, then extract unique genres
     setLoading(true);
-    fetch("http://localhost:5050/api/books")
+    fetch("https://paranaledge-y7z1.onrender.com/api/books")
       .then((res) => res.json())
       .then((data) => {
         const allGenres = (data.books || [])

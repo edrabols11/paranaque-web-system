@@ -81,7 +81,7 @@ const AddBook = ({ onBookAdded }) => {
     };
 
     try {
-      const res = await fetch("http://localhost:5050/api/books", {
+      const res = await fetch("https://paranaledge-y7z1.onrender.com/api/books", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)

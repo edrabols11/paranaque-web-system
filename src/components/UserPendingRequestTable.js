@@ -20,7 +20,7 @@ const UserPendingRequestTable = () => {
   const fetchPendingRequest = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5050/api/transactions/pending-requests');
+      const response = await fetch('https://paranaledge-y7z1.onrender.com/api/transactions/pending-requests');
       const data = await response.json();
       if (response.ok) {
         setPendingRequests(data.transactions || []);
@@ -50,7 +50,7 @@ const UserPendingRequestTable = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5050/api/transactions/reject-reservation/${selectedReservation._id}`, {
+      const response = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/reject-reservation/${selectedReservation._id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
