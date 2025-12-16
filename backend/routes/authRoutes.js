@@ -89,7 +89,7 @@ router.post("/register", async (req, res) => {
       from: process.env.GMAIL_USER,
       to: email,
       subject: "Email Verification",
-      text: `Please verify your email by clicking the following link: https://paranaledge-backend.onrender.com/api/auth/verify/${verificationToken}`,
+      text: `Please verify your email by clicking the following link: https://paranaledge-y7z1.onrender.com/api/auth/verify/${verificationToken}`,
     };
 
     await transporter.sendMail(mailOptions);
@@ -551,7 +551,7 @@ router.post('/forgot-password', async (req, res) => {
     await user.save();
 
     // Send email with reset link
-    const resetLink = `http://localhost:3000/reset-password/${resetToken}`;
+    const resetLink = `https://paranaledge-web-system-ehczno8z6-edrabols-projects.vercel.app/reset-password/${resetToken}`;
     const mailOptions = {
       from: process.env.GMAIL_USER,
       to: email,
