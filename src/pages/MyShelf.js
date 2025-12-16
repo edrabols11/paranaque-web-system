@@ -14,7 +14,7 @@ const MyShelf = () => {
   const fetchTransactions = useCallback(async () => {
     try {
       console.log('Fetching transactions for user:', userEmail);
-      const res = await fetch(`http://localhost:5050/api/transactions/user/${userEmail}`);
+      const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/user/${userEmail}`);
       const data = await res.json();
       if (res.ok) {
         console.log('User transactions response:', data);
@@ -33,7 +33,7 @@ const MyShelf = () => {
 
   useEffect(() => {
     fetchTransactions();
-    fetch("http://localhost:5050/api/logs")
+    fetch("https://paranaledge-y7z1.onrender.com/api/logs")
       .then((res) => res.json())
       .then((data) => {
         console.log('Fetched logs:', data); // Debug log
@@ -48,7 +48,7 @@ const MyShelf = () => {
 
   const handleReturn = async (transactionId) => {
     try {
-      const res = await fetch(`http://localhost:5050/api/transactions/return/${transactionId}`, {
+      const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/return/${transactionId}`, {
         method: "POST",
         headers: {
           'Content-Type': 'application/json'
@@ -95,8 +95,8 @@ const MyShelf = () => {
     try {
       // Use the appropriate endpoint based on transaction type
       const endpoint = type === 'reserve' 
-        ? `http://localhost:5050/api/transactions/cancel-reservation/${transactionId}`
-        : `http://localhost:5050/api/transactions/cancel-pending/${transactionId}`;
+        ? `https://paranaledge-y7z1.onrender.com/api/transactions/cancel-reservation/${transactionId}`
+        : `https://paranaledge-y7z1.onrender.com/api/transactions/cancel-pending/${transactionId}`;
 
       const res = await fetch(endpoint, {
         method: "POST",
@@ -142,7 +142,7 @@ const MyShelf = () => {
   };
   const handleBorrowReserved = async (transactionId) => {
     try {
-      const res = await fetch(`http://localhost:5050/api/transactions/${transactionId}/borrow-reserved`, {
+      const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/${transactionId}/borrow-reserved`, {
         method: "PUT",
         headers: {
           'Content-Type': 'application/json'

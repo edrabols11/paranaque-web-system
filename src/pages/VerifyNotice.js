@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft, faUndo, faTrash, faBook } from "@fortawesome/free-solid-svg-icons";
 import logo from "../imgs/liblogo.png";
 import "../components/App.css";
+import API_BASE_URL from "../config/api";
 
 function VerifyNotice() {
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ function VerifyNotice() {
 
     const interval = setInterval(async () => {
       try {
-        const res = await axios.get(`http://localhost:5050/api/auth/is-verified?email=${email}`);
+        const res = await axios.get(`${API_BASE_URL}/api/auth/is-verified?email=${email}`);
         if (res.data.verified) {
           clearInterval(interval);
           await Swal.fire({

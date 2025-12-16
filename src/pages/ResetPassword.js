@@ -58,7 +58,7 @@ function ResetPassword() {
 
     setLoading(true);
     try {
-      const res = await axios.post("http://localhost:5050/api/auth/reset-password", {
+      const res = await axios.post("https://paranaledge-y7z1.onrender.com/api/auth/reset-password", {
         token,
         newPassword
       });

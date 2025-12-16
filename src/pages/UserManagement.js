@@ -30,7 +30,7 @@ const UserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch("http://localhost:5050/api/auth/users");
+      const res = await fetch("https://paranaledge-y7z1.onrender.com/api/auth/users");
       const data = await res.json();
       if (res.ok) {
         setUsers(data.users);
@@ -47,7 +47,7 @@ const UserManagement = () => {
     if (!confirm) return;
 
     try {
-      const res = await fetch(`http://localhost:5050/api/auth/users/${userId}`, {
+      const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/auth/users/${userId}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -111,7 +111,7 @@ const UserManagement = () => {
       setEditError("");
     }
     console.log("Passcode correct. Updating role.", passcode);
-    const res = await fetch(`http://localhost:5050/api/auth/users/${userId}/update-role`, {
+    const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/auth/users/${userId}/update-role`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ role: e.target.value })
@@ -124,7 +124,7 @@ const UserManagement = () => {
       return;
     }
     try {
-      const res = await fetch(`http://localhost:5050/api/auth/users/${userId}`, {
+      const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/auth/users/${userId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editForm),
@@ -286,7 +286,7 @@ const UserManagement = () => {
 
   useEffect(() => {
     fetchUsers();
-    fetch("http://localhost:5050/api/logs")
+    fetch("https://paranaledge-y7z1.onrender.com/api/logs")
       .then((res) => res.json())
       .then((data) => {
         console.log('Fetched logs:', data); // Debug log

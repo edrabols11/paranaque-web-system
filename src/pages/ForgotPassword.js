@@ -28,7 +28,7 @@ function ForgotPassword() {
 
     setLoading(true);
     try {
-      const res = await axios.post("http://localhost:5050/api/auth/forgot-password", { email });
+      const res = await axios.post("https://paranaledge-y7z1.onrender.com/api/auth/forgot-password", { email });
 
       await Swal.fire({
         title: "Parañaledge",

@@ -2,7 +2,7 @@
   "name": "paranaledgeweb",
   "version": "0.1.0",
   "private": true,
-  "proxy": "http://localhost:5050",
+  "proxy": "https://paranaledge-y7z1.onrender.com",
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
     "@fortawesome/free-regular-svg-icons": "^7.1.0",

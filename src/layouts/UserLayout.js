@@ -30,7 +30,7 @@ const UserLayout = () => {
     // Log the logout to the backend
     if (userEmail) {
       try {
-        await fetch('http://localhost:5050/api/auth/logout', {
+        await fetch('https://paranaledge-y7z1.onrender.com/api/auth/logout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: userEmail })

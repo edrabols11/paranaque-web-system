@@ -52,7 +52,7 @@ const UserHome = () => {
   const fetchBooks = () => {
     // Use pagination: 4 rows x 6 columns = 24 items per page
     const limit = 24;
-    fetch(`http://localhost:5050/api/books?page=${page}&limit=${limit}`)
+    fetch(`https://paranaledge-y7z1.onrender.com/api/books?page=${page}&limit=${limit}`)
       .then((res) => res.json())
       .then((data) => {
         setBooks(data.books || []);
@@ -63,7 +63,7 @@ const UserHome = () => {
 
   const fetchAllBooksForRecommendations = async () => {
     try {
-      const res = await fetch("http://localhost:5050/api/books?limit=10000");
+      const res = await fetch("https://paranaledge-y7z1.onrender.com/api/books?limit=10000");
       const data = await res.json();
       setAllBooks(data.books || []);
     } catch (error) {
@@ -76,7 +76,7 @@ const UserHome = () => {
     if (!userEmail) return;
 
     try {
-      const response = await fetch(`http://localhost:5050/api/transactions/user/${userEmail}`);
+      const response = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/user/${userEmail}`);
       const data = await response.json();
       if (response.ok) {
         // Filter only pending and approved reservations
@@ -111,7 +111,7 @@ const UserHome = () => {
       return;
     }
     try {
-      const res = await fetch(`http://localhost:5050/api/transactions/borrow-request`, {
+      const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/borrow-request`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bookId: selectedBook._id, userEmail }),
@@ -174,7 +174,7 @@ const UserHome = () => {
     }
 
     try {
-      const res = await fetch(`http://localhost:5050/api/transactions/reserve`, {
+      const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/reserve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bookId: selectedBook._id, userEmail }),
@@ -211,7 +211,7 @@ const UserHome = () => {
 
   const handleBookmark = async (bookId) => {
     try {
-      const res = await fetch("http://localhost:5050/api/bookmarks/add", {
+      const res = await fetch("https://paranaledge-y7z1.onrender.com/api/bookmarks/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ book_id: bookId, email: userEmail }),
@@ -244,7 +244,7 @@ const UserHome = () => {
     if (!userEmail) return;
 
     try {
-      const response = await fetch(`http://localhost:5050/api/transactions/user/${userEmail}`);
+      const response = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/user/${userEmail}`);
       const data = await response.json();
       
       if (response.ok && data.transactions && Array.isArray(data.transactions)) {
@@ -273,7 +273,7 @@ const UserHome = () => {
 
     try {
       console.log("Calling AI recommend endpoint with borrowed books:", borrowed);
-      const response = await fetch('http://localhost:5050/api/ai/recommend', {
+      const response = await fetch('https://paranaledge-y7z1.onrender.com/api/ai/recommend', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -302,7 +302,7 @@ const UserHome = () => {
 
   const fetchBookmarks = async () => {
     try {
-      const res = await fetch(`http://localhost:5050/api/bookmarks/get?email=${userEmail}`, {
+      const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/bookmarks/get?email=${userEmail}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" }
       });

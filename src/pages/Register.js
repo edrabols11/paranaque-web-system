@@ -196,7 +196,7 @@ function Register() {
 
   try {
     const { confirmPassword, termsAccepted, ...finalData } = dataToSend;
-    const res = await axios.post("http://localhost:5050/api/auth/register", finalData);
+    const res = await axios.post("https://paranaledge-y7z1.onrender.com/api/auth/register", finalData);
     await Swal.fire({
       title: "Parañaledge",
       text: res.data.message,

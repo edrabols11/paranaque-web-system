@@ -8,7 +8,7 @@ function History() {
   const [viewUserLogs, setViewUserLogs] = useState(userEmail);
 
   useEffect(() => {
-    fetch("http://localhost:5050/api/logs")
+    fetch("https://paranaledge-y7z1.onrender.com/api/logs")
       .then((res) => res.json())
       .then((data) => {
         console.log('Fetched logs:', data); // Debug log

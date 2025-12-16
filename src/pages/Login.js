@@ -19,7 +19,7 @@ function Login() {
     e.preventDefault();
 
     try {
-      const res = await axios.post("http://localhost:5050/api/auth/login", form);
+      const res = await axios.post("https://paranaledge-y7z1.onrender.com/api/auth/login", form);
       const user = res.data.user;
 
       await Swal.fire({

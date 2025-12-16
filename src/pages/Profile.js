@@ -25,7 +25,7 @@ const Profile = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await axios.get(`http://localhost:5050/api/auth/profile/${email}`);
+        const res = await axios.get(`https://paranaledge-y7z1.onrender.com/api/auth/profile/${email}`);
         setUser(res.data);
         setForm(res.data);
       } catch (err) {
@@ -42,7 +42,7 @@ const Profile = () => {
 
   const handleSave = async () => {
     try {
-      const res = await axios.put(`http://localhost:5050/api/auth/profile/${email}`, form);
+      const res = await axios.put(`https://paranaledge-y7z1.onrender.com/api/auth/profile/${email}`, form);
 
       await Swal.fire({
         title: "Parañaledge",
@@ -81,7 +81,7 @@ const Profile = () => {
     }
 
     try {
-      const res = await axios.put(`http://localhost:5050/api/auth/change-password`, {
+      const res = await axios.put(`https://paranaledge-y7z1.onrender.com/api/auth/change-password`, {
         email,
         currentPassword,
         newPassword,
@@ -130,7 +130,7 @@ const Profile = () => {
 
       try {
         const res = await axios.put(
-          `http://localhost:5050/api/auth/profile/upload-image/${email}`,
+          `https://paranaledge-y7z1.onrender.com/api/auth/profile/upload-image/${email}`,
           { profilePicture: imageBase64 }
         );
 
