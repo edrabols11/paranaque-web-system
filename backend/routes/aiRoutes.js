@@ -1,0 +1,416 @@
+const express = require('express');
+const router = express.Router();
+const fetch = require('node-fetch');
+const { GoogleAuth } = require('google-auth-library');
+const Book = require('../models/Book');
+const User = require('../models/User');
+
+/**
+ * POST /api/ai/chat
+ * Body: { message: string, userId?: string }
+ *
+ * This route handles chat requests with enhanced book-finding capabilities.
+ * Configuration (env):
+ * - AI_PROVIDER: 'google' | 'openai' | 'mock' (default 'mock')
+ * - AI_ENDPOINT: full REST URL to call (when using 'google')
+ * - GOOGLE_API_KEY or OPENAI_API_KEY for API authentication
+ */
+
+// Helper function to search books in database
+async function searchBooksInDB(query) {
+  try {
+    // If no query or very short, return all available books
+    if (!query || query.trim().length < 2) {
+      const books = await Book.find({
+        archived: false,
+        availableStock: { $gt: 0 }
+      }).limit(12).select('title author year availableStock publisher location genre');
+      return books;
+    }
+
+    const queryLower = query.toLowerCase();
+
+    // If user asks for available books, show all available
+    if (queryLower.includes('available') || queryLower.includes('what') || 
+        queryLower.includes('show') || queryLower.includes('have') ||
+        queryLower.includes('list')) {
+      const books = await Book.find({
+        archived: false,
+        availableStock: { $gt: 0 }
+      }).limit(15).select('title author year availableStock publisher location genre');
+      return books;
+    }
+
+    // Multi-term search for flexible matching
+    const searchTerms = query.toLowerCase().split(/\s+/).filter(t => t.length > 1);
+    const searchRegex = searchTerms.map(term => new RegExp(term, 'i'));
+
+    // Search by title, author, publisher, genre
+    const books = await Book.find({
+      archived: false,
+      $or: [
+        { title: { $in: searchRegex } },
+        { author: { $in: searchRegex } },
+        { publisher: { $in: searchRegex } },
+        { genre: { $in: searchRegex } }
+      ]
+    }).limit(15).select('title author year availableStock publisher location genre');
+
+    // If found results, prioritize available books
+    if (books && books.length > 0) {
+      return books.sort((a, b) => (b.availableStock || 0) - (a.availableStock || 0));
+    }
+
+    // If no results, try partial matching
+    const partialBooks = await Book.find({
+      archived: false,
+      $or: [
+        { title: { $regex: query, $options: 'i' } },
+        { author: { $regex: query, $options: 'i' } }
+      ]
+    }).limit(10).select('title author year availableStock publisher location genre');
+
+    return partialBooks || [];
+  } catch (err) {
+    console.error('Book search error:', err);
+    return [];
+  }
+}
+
+// Helper function to build system prompt with context
+function buildSystemPrompt(books) {
+  let prompt = `You are a helpful AI assistant for Parañaledge Library.
+
+YOUR PRIMARY ROLES:
+1. Help users find books in our library and answer library-related questions
+2. Answer general questions on any topic (like a regular AI assistant)
+
+LIBRARY BOOKS IN STOCK:
+`;
+
+  if (books && books.length > 0) {
+    prompt += `We currently have ${books.length} books available:\n\n`;
+    books.forEach((book, i) => {
+      const stock = book.availableStock || 0;
+      const status = stock > 0 ? `✓ Available (${stock})` : `✗ Unavailable`;
+      const author = book.author || 'Unknown';
+      const year = book.year ? ` (${book.year})` : '';
+      prompt += `• "${book.title}" by ${author}${year} [${status}]\n`;
+    });
+  } else {
+    prompt += `(No books found matching this search)\n`;
+  }
+
+  prompt += `
+IMPORTANT GUIDELINES:
+- When users ask about books: ONLY mention books from the list above if they match their request
+- When users ask about books NOT in the list: Be honest and suggest alternatives from our inventory
+- When users ask general questions (not about books): Feel free to answer normally
+- Always be helpful, friendly, and accurate
+`;
+  return prompt;
+}
+
+router.post('/chat', async (req, res) => {
+  const { message } = req.body || {};
+  if (!message) return res.status(400).json({ error: 'Missing message' });
+
+  const provider = process.env.AI_PROVIDER || 'mock';
+
+  try {
+    // Always search for books relevant to the query
+    let contextBooks = [];
+    // Search for relevant books
+    contextBooks = await searchBooksInDB(message);
+
+    const systemPrompt = buildSystemPrompt(contextBooks);
+
+    if (provider === 'google') {
+      const endpoint = process.env.AI_ENDPOINT;
+      if (!endpoint) return res.status(500).json({ error: 'AI_ENDPOINT not configured' });
+
+      const googleApiKey = process.env.GOOGLE_API_KEY;
+      if (googleApiKey) {
+        const url = endpoint.includes('?') ? `${endpoint}&key=${googleApiKey}` : `${endpoint}?key=${googleApiKey}`;
+
+        // IMPORTANT: Inject system prompt into the message to force Google to use real books
+        const combinedMessage = `${systemPrompt}\n\nUser: ${message}`;
+
+        // Send request body compatible with generateContent (newer Gemini API)
+        const body = {
+          contents: [{
+            parts: [{
+              text: combinedMessage
+            }]
+          }]
+        };
+
+        const aiRes = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+
+        // Log request/response for debugging
+        console.log('[Google AI] Sending combined prompt with system instructions + user message');
+        console.log('[Google AI] Request URL:', url);
+        console.log('[Google AI] Books in context:', contextBooks.length);
+        console.log('[Google AI] Response status:', aiRes.status);
+
+        const contentType = aiRes.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const data = await aiRes.json();
+          console.log('[Google AI] Response data:', JSON.stringify(data).substring(0, 500));
+          // Extract text from Gemini generateContent response: candidates[0].content.parts[0].text
+          const reply = (data?.candidates?.[0]?.content?.parts?.[0]?.text) ||
+            (data?.candidates?.[0]?.output) ||
+            (data?.candidates?.[0]?.content) ||
+            (data?.outputText) ||
+            JSON.stringify(data);
+          return res.json({ reply, raw: data });
+        }
+
+        const text = await aiRes.text();
+        return res.json({ reply: text });
+      }
+
+      // Use google-auth-library to fetch an access token with cloud-platform scope
+      const auth = new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
+      const client = await auth.getClient();
+      const token = await client.getAccessToken();
+
+      // Basic request body with system context
+      const body = { 
+        prompt: { 
+          text: `${systemPrompt}\n\nUser: ${message}` 
+        } 
+      };
+
+      const aiRes = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token && token.token ? token.token : token}`
+        },
+        body: JSON.stringify(body)
+      });
+
+      // Try to parse JSON if possible
+      const contentType = aiRes.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await aiRes.json();
+        // Attempt to extract text from common response shapes
+        const reply = (data?.outputText) || (data?.candidates?.[0]?.content) || JSON.stringify(data);
+        return res.json({ reply, raw: data });
+      }
+
+      const text = await aiRes.text();
+      return res.json({ reply: text });
+    }
+
+    if (provider === 'openai') {
+      const key = process.env.OPENAI_API_KEY;
+      if (!key) return res.status(500).json({ error: 'OPENAI_API_KEY not configured' });
+
+      // Use Chat Completions with system context
+      const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${key}`
+        },
+        body: JSON.stringify({
+          model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: message }
+          ],
+          max_tokens: 600
+        })
+      });
+
+      const contentType = openaiRes.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await openaiRes.json();
+        const reply = data?.choices?.[0]?.message?.content || JSON.stringify(data);
+        return res.json({ reply, raw: data });
+      }
+
+      const text = await openaiRes.text();
+      return res.json({ reply: text });
+    }
+
+// Mock provider: intelligent mock reply with REAL book context
+    let mockReply = '';
+    
+    if (contextBooks && contextBooks.length > 0) {
+      mockReply = `Welcome to Parañaledge Library.\n\n`;
+      mockReply += `AVAILABLE BOOKS (${contextBooks.length} found)\n`;
+      mockReply += `${'='.repeat(70)}\n\n`;
+      
+      contextBooks.forEach((book, index) => {
+        const stock = book.availableStock || 0;
+        const status = stock > 0 ? `Available (${stock})` : `Out of Stock`;
+        const author = book.author || 'Unknown Author';
+        const year = book.year ? ` (${book.year})` : '';
+        const publisher = book.publisher ? `\n   Publisher: ${book.publisher}` : '';
+        
+        mockReply += `${index + 1}. TITLE: "${book.title}"\n`;
+        mockReply += `   AUTHOR: ${author}${year}\n`;
+        mockReply += `   STATUS: ${status}${publisher}\n\n`;
+      });
+      
+      mockReply += `${'='.repeat(70)}\n`;
+      mockReply += `Would you like more information about any of these books?`;
+    } else {
+      // If no books found, do a general search to show what's available
+      const allBooks = await Book.find({ archived: false, availableStock: { $gt: 0 } }).limit(8).select('title author year availableStock');
+      if (allBooks && allBooks.length > 0) {
+        mockReply = `Your search did not match exactly, but here are available books in our library:\n\n`;
+        mockReply += `AVAILABLE BOOKS (${allBooks.length} shown)\n`;
+        mockReply += `${'='.repeat(70)}\n\n`;
+        
+        allBooks.forEach((book, index) => {
+          const stock = book.availableStock || 0;
+          const author = book.author || 'Unknown Author';
+          const year = book.year ? ` (${book.year})` : '';
+          
+          mockReply += `${index + 1}. TITLE: "${book.title}"\n`;
+          mockReply += `   AUTHOR: ${author}${year}\n`;
+          mockReply += `   AVAILABILITY: ${stock} in stock\n\n`;
+        });
+        
+        mockReply += `${'='.repeat(70)}\n`;
+        mockReply += `Please try searching for a specific author, title, or genre.`;
+      } else {
+        mockReply = `I can assist you in finding books in our library. Please search for a specific title, author name, or genre.`;
+      }
+    }
+    
+    return res.json({ reply: mockReply, books: contextBooks });
+  } catch (err) {
+    console.error('AI proxy error:', err);
+    return res.status(500).json({ error: 'AI request failed', details: err.message });
+  }
+});
+
+/**
+ * POST /api/ai/recommend
+ * Body: { borrowedBooks: array of book objects, limit: number (default 6) }
+ * 
+ * Uses AI to generate smart book recommendations based on user's borrowing history
+ */
+router.post('/recommend', async (req, res) => {
+  try {
+    const { borrowedBooks = [], limit = 6 } = req.body;
+
+    if (!borrowedBooks || borrowedBooks.length === 0) {
+      return res.json({ recommendations: [] });
+    }
+
+    // Get all available books
+    const allBooks = await Book.find({ archived: false });
+
+    // Build context about user's preferences
+    const userBookTitles = borrowedBooks.map(b => b.bookId?.title || b.title).filter(Boolean).join(', ');
+    const userCategories = new Set();
+    borrowedBooks.forEach(b => {
+      if (b.bookId?.category) userCategories.add(b.bookId.category);
+      if (b.category) userCategories.add(b.category);
+    });
+
+    const borrowedIds = new Set(borrowedBooks.map(b => (b.bookId?._id || b.bookId)?.toString()));
+
+    // Filter out books user has already borrowed
+    const availableBooks = allBooks.filter(b => !borrowedIds.has(b._id?.toString()));
+
+    // Use AI-like logic to recommend based on categories and author patterns
+    const prompt = `Based on a user who has borrowed these books: "${userBookTitles}", 
+    please recommend ${limit} books from this list that would interest them.
+    
+    Available books to recommend from:
+    ${availableBooks.slice(0, 30).map(b => `- "${b.title}" by ${b.author} (${b.category})`).join('\n')}
+    
+    Consider:
+    1. Similar categories they've shown interest in
+    2. Popular authors in genres they like
+    3. Variety to expand their reading
+    
+    Return ONLY a JSON array with the book titles they should read, in order of recommendation.`;
+
+    // For now, use smart filtering instead of actual AI
+    // Get books in same categories
+    const categoryMatches = availableBooks.filter(b => 
+      Array.from(userCategories).includes(b.category)
+    );
+
+    // Get books from similar authors
+    const userAuthors = new Set();
+    borrowedBooks.forEach(b => {
+      if (b.bookId?.author) userAuthors.add(b.bookId.author);
+      if (b.author) userAuthors.add(b.author);
+    });
+
+    const authorMatches = availableBooks.filter(b => 
+      userAuthors.has(b.author)
+    );
+
+    // Combine and deduplicate - PRIORITIZE BOOKS WITH IMAGES
+    const recommendedIds = new Set();
+    const recommendations = [];
+
+    // Combine all candidate books
+    const allCandidates = [
+      ...categoryMatches.map(b => ({ ...b.toObject(), priority: 3 })), // Highest priority
+      ...authorMatches.map(b => ({ ...b.toObject(), priority: 2 })),   // Medium priority
+      ...availableBooks.map(b => ({ ...b.toObject(), priority: 1 }))   // Lowest priority
+    ];
+
+    // Remove duplicates (keep highest priority version)
+    const uniqueCandidates = [];
+    const seenIds = new Set();
+    allCandidates.forEach(book => {
+      const bookId = book._id.toString();
+      if (!seenIds.has(bookId)) {
+        uniqueCandidates.push(book);
+        seenIds.add(bookId);
+      }
+    });
+
+    // Sort by: 1) has image (true first), 2) priority (high first)
+    uniqueCandidates.sort((a, b) => {
+      const aHasImage = !!a.image ? 1 : 0;
+      const bHasImage = !!b.image ? 1 : 0;
+      if (bHasImage !== aHasImage) return bHasImage - aHasImage;
+      return (b.priority || 0) - (a.priority || 0);
+    });
+
+    // Take top limit items
+    for (let i = 0; i < uniqueCandidates.length && recommendations.length < limit; i++) {
+      const book = uniqueCandidates[i];
+      if (!recommendedIds.has(book._id.toString())) {
+        recommendations.push(book);
+        recommendedIds.add(book._id.toString());
+      }
+    }
+
+    // Log the recommendations for debugging
+    console.log('Recommendations returned:', recommendations.map(r => ({ 
+      title: r.title, 
+      hasImage: !!r.image,
+      image: r.image ? r.image.substring(0, 50) + '...' : 'NO IMAGE',
+      category: r.category,
+      author: r.author
+    })));
+
+    res.json({ 
+      recommendations: recommendations.slice(0, limit),
+      reasoning: `Found ${recommendations.length} recommendations based on categories: ${Array.from(userCategories).join(', ')} and authors you enjoy.`
+    });
+  } catch (err) {
+    console.error('Recommendation error:', err);
+    return res.status(500).json({ error: 'Recommendation failed', details: err.message });
+  }
+});
+
+module.exports = router;
