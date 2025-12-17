@@ -127,85 +127,71 @@ router.post('/chat', async (req, res) => {
 
     if (provider === 'google') {
       const endpoint = process.env.AI_ENDPOINT;
-      if (!endpoint) return res.status(500).json({ error: 'AI_ENDPOINT not configured' });
+      if (!endpoint) {
+        console.warn('⚠️  AI_ENDPOINT not configured, falling back to mock mode');
+        // Fall through to mock provider
+      } else {
+        const googleApiKey = process.env.GOOGLE_API_KEY;
+        if (googleApiKey) {
+          try {
+            const url = endpoint.includes('?') ? `${endpoint}&key=${googleApiKey}` : `${endpoint}?key=${googleApiKey}`;
 
-      const googleApiKey = process.env.GOOGLE_API_KEY;
-      if (googleApiKey) {
-        const url = endpoint.includes('?') ? `${endpoint}&key=${googleApiKey}` : `${endpoint}?key=${googleApiKey}`;
+            // IMPORTANT: Inject system prompt into the message to force Google to use real books
+            const combinedMessage = `${systemPrompt}\n\nUser: ${message}`;
 
-        // IMPORTANT: Inject system prompt into the message to force Google to use real books
-        const combinedMessage = `${systemPrompt}\n\nUser: ${message}`;
+            // Send request body compatible with generateContent (newer Gemini API)
+            const body = {
+              contents: [{
+                parts: [{
+                  text: combinedMessage
+                }]
+              }]
+            };
 
-        // Send request body compatible with generateContent (newer Gemini API)
-        const body = {
-          contents: [{
-            parts: [{
-              text: combinedMessage
-            }]
-          }]
-        };
+            console.log('[Google AI] Sending combined prompt with system instructions + user message');
+            console.log('[Google AI] Books in context:', contextBooks.length);
 
-        const aiRes = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        });
+            // Add timeout to prevent hanging (10 seconds max)
+            const timeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Google API request timeout after 10 seconds')), 10000)
+            );
 
-        // Log request/response for debugging
-        console.log('[Google AI] Sending combined prompt with system instructions + user message');
-        console.log('[Google AI] Request URL:', url);
-        console.log('[Google AI] Books in context:', contextBooks.length);
-        console.log('[Google AI] Response status:', aiRes.status);
+            const aiRes = await Promise.race([
+              fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+              }),
+              timeoutPromise
+            ]);
+            console.log('[Google AI] Response status:', aiRes.status);
 
-        const contentType = aiRes.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-          const data = await aiRes.json();
-          console.log('[Google AI] Response data:', JSON.stringify(data).substring(0, 500));
-          // Extract text from Gemini generateContent response: candidates[0].content.parts[0].text
-          const reply = (data?.candidates?.[0]?.content?.parts?.[0]?.text) ||
-            (data?.candidates?.[0]?.output) ||
-            (data?.candidates?.[0]?.content) ||
-            (data?.outputText) ||
-            JSON.stringify(data);
-          return res.json({ reply, raw: data });
+            const contentType = aiRes.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+              const data = await aiRes.json();
+              console.log('[Google AI] Response data:', JSON.stringify(data).substring(0, 500));
+              // Extract text from Gemini generateContent response: candidates[0].content.parts[0].text
+              const reply = (data?.candidates?.[0]?.content?.parts?.[0]?.text) ||
+                (data?.candidates?.[0]?.output) ||
+                (data?.candidates?.[0]?.content) ||
+                (data?.outputText) ||
+                JSON.stringify(data);
+              return res.json({ reply, raw: data });
+            }
+
+            const text = await aiRes.text();
+            return res.json({ reply: text });
+          } catch (err) {
+            console.error('❌ Google AI error:', err.message);
+            console.warn('⚠️  Falling back to mock mode due to Google API error');
+            // Fall through to mock provider
+          }
+        } else {
+          console.warn('⚠️  GOOGLE_API_KEY not configured');
         }
-
-        const text = await aiRes.text();
-        return res.json({ reply: text });
       }
 
-      // Use google-auth-library to fetch an access token with cloud-platform scope
-      const auth = new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/cloud-platform'] });
-      const client = await auth.getClient();
-      const token = await client.getAccessToken();
-
-      // Basic request body with system context
-      const body = { 
-        prompt: { 
-          text: `${systemPrompt}\n\nUser: ${message}` 
-        } 
-      };
-
-      const aiRes = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token && token.token ? token.token : token}`
-        },
-        body: JSON.stringify(body)
-      });
-
-      // Try to parse JSON if possible
-      const contentType = aiRes.headers.get('content-type') || '';
-      if (contentType.includes('application/json')) {
-        const data = await aiRes.json();
-        // Attempt to extract text from common response shapes
-        const reply = (data?.outputText) || (data?.candidates?.[0]?.content) || JSON.stringify(data);
-        return res.json({ reply, raw: data });
-      }
-
-      const text = await aiRes.text();
-      return res.json({ reply: text });
+      // If we reach here, Google provider failed, fall through to mock
     }
 
     if (provider === 'openai') {
@@ -240,7 +226,8 @@ router.post('/chat', async (req, res) => {
       return res.json({ reply: text });
     }
 
-// Mock provider: intelligent mock reply with REAL book context
+    // Mock provider: intelligent mock reply with REAL book context
+    // (fallback for Google/OpenAI failures or when AI_PROVIDER=mock)
     let mockReply = '';
     
     if (contextBooks && contextBooks.length > 0) {

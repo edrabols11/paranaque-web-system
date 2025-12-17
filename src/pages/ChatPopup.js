@@ -1,6 +1,7 @@
 // components/ChatPopup.js
 import React, { useState, useRef, useEffect } from 'react';
 import "../components/App.css";
+import API_BASE_URL from '../config/api';
 
 // Enhanced ChatPopup with book search integration
 const ChatPopup = () => {
@@ -28,7 +29,7 @@ const ChatPopup = () => {
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/ai/chat', {
+      const res = await fetch(`${API_BASE_URL}/api/ai/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: messageText })
