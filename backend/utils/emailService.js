@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+require('dotenv').config();
 
 // Create a test account if needed, or use your own SMTP settings
 const transporter = nodemailer.createTransport({
@@ -8,6 +9,11 @@ const transporter = nodemailer.createTransport({
   auth: {
     user: process.env.GMAIL_USER,
     pass: process.env.GMAIL_PASS
+  },
+  connectionTimeout: 10000,
+  socketTimeout: 10000,
+  pool: {
+    maxConnections: 1
   }
 });
 

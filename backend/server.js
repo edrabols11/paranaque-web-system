@@ -30,6 +30,21 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ Connected to MongoDB"))
   .catch(err => console.error("❌ MongoDB connection error:", err));
 
+// Root route
+app.get('/', (req, res) => {
+  res.json({ 
+    message: '✅ Parañaledge Library Backend is Running', 
+    version: '1.0.0',
+    status: 'operational',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/test', (req, res) => {
+  res.json({ message: '✅ Backend is working!', timestamp: new Date().toISOString() });
+});
+
+// API routes
 app.use("/api/books", bookRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/logs", logRoutes);
@@ -37,8 +52,22 @@ app.use("/api/transactions", transactionRoutes);
 app.use("/api/bookmarks", bookmarksRoutes);
 app.use("/api/ai", aiRoutes);
 
-app.get('/test', (req, res) => {
-  res.send('Backend is working!');
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ 
+    message: 'Endpoint not found', 
+    path: req.path,
+    method: req.method 
+  });
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+  console.error('❌ Error:', err);
+  res.status(err.status || 500).json({ 
+    message: err.message || 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? err : {}
+  });
 });
 
 // Start the reservation expiration checker

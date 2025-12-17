@@ -101,11 +101,21 @@ router.post("/register", async (req, res) => {
       `,
     };
 
-    await transporter.sendMail(mailOptions);
+    console.log(`Attempting to send verification email to: ${email}`);
+    
+    // Set a timeout for email sending
+    const emailPromise = transporter.sendMail(mailOptions);
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Email sending timeout')), 15000)
+    );
+
+    await Promise.race([emailPromise, timeoutPromise]);
+    console.log(`Verification email sent successfully to: ${email}`);
+    
     return res.status(200).json({ message: 'User registered successfully. Please check your email to verify your account.' });
   } catch (err) {
     console.error("Error in /register route:", err);
-    return res.status(200).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error. Please check the backend logs.' });
   }
 });
 
@@ -575,12 +585,35 @@ router.post('/forgot-password', async (req, res) => {
       `,
     };
 
-    await transporter.sendMail(mailOptions);
+    console.log(`Attempting to send password reset email to: ${email}`);
+    
+    // Set a timeout for email sending
+    const emailPromise = transporter.sendMail(mailOptions);
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Email sending timeout')), 15000)
+    );
+
+    await Promise.race([emailPromise, timeoutPromise]);
+    
+    console.log(`Password reset email sent successfully to: ${email}`);
+    
+    // Log the action
+    await new Log({
+      userEmail: email,
+      action: 'Password reset email sent'
+    }).save();
 
     res.json({ message: 'Password reset email sent successfully. Check your email for instructions.' });
   } catch (err) {
     console.error("Error in forgot-password route:", err);
-    res.status(500).json({ message: 'Server error. Please try again later.' });
+    
+    // Log the error
+    await new Log({
+      userEmail: req.body.email,
+      action: `Failed to send password reset email: ${err.message}`
+    }).save().catch(e => console.log("Log save error:", e));
+    
+    res.status(500).json({ message: 'Failed to send email. Please try again later.' });
   }
 });
 
