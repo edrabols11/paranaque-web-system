@@ -74,7 +74,8 @@ app.use((err, req, res, next) => {
 const { startReservationExpirationCheck } = require('./utils/reservationManager');
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
   startReservationExpirationCheck();
   console.log('📅 Reservation expiration checker started');
 });
