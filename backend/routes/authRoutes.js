@@ -12,7 +12,9 @@ require('dotenv').config();
 
 // Gmail transporter setup
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
   auth: {
     user: process.env.GMAIL_USER,
     pass: process.env.GMAIL_PASS
@@ -88,8 +90,15 @@ router.post("/register", async (req, res) => {
     const mailOptions = {
       from: process.env.GMAIL_USER,
       to: email,
-      subject: "Email Verification",
-      text: `Please verify your email by clicking the following link: https://paranaledge-y7z1.onrender.com/api/auth/verify/${verificationToken}`,
+      subject: "Email Verification - Parañaledge",
+      html: `
+        <h2>Email Verification</h2>
+        <p>Welcome to Parañaledge! Please verify your email by clicking the link below:</p>
+        <a href="https://paranaledge-y7z1.onrender.com/api/auth/verify/${verificationToken}" style="display: inline-block; padding: 10px 20px; background-color: #2e7d32; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0;">Verify Email</a>
+        <p>Or copy and paste this link: https://paranaledge-y7z1.onrender.com/api/auth/verify/${verificationToken}</p>
+        <p>This link expires in 24 hours.</p>
+        <p>If you did not register, please ignore this email.</p>
+      `,
     };
 
     await transporter.sendMail(mailOptions);
@@ -551,16 +560,18 @@ router.post('/forgot-password', async (req, res) => {
     await user.save();
 
     // Send email with reset link
-    const resetLink = `https://paranaledge-web-system-ehczno8z6-edrabols-projects.vercel.app/reset-password/${resetToken}`;
+    const resetLink = `https://paranaledge-y7z1.onrender.com/reset-password/${resetToken}`;
     const mailOptions = {
       from: process.env.GMAIL_USER,
       to: email,
       subject: "Password Reset Request - Parañaledge",
       html: `
-        <p>You requested a password reset. Please click the link below to reset your password:</p>
-        <a href="${resetLink}">Reset Password</a>
+        <h2>Password Reset Request</h2>
+        <p>You requested a password reset for your Parañaledge account. Please click the link below to reset your password:</p>
+        <a href="${resetLink}" style="display: inline-block; padding: 10px 20px; background-color: #2e7d32; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0;">Reset Password</a>
+        <p>Or copy and paste this link: ${resetLink}</p>
         <p>This link expires in 1 hour.</p>
-        <p>If you did not request this, please ignore this email.</p>
+        <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>
       `,
     };
 
