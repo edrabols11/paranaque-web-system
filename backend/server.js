@@ -33,10 +33,11 @@ mongoose.connect(process.env.MONGO_URI)
 // Root route
 app.get('/', (req, res) => {
   res.json({ 
-    message: '✅ Parañaledge Library Backend is Running', 
-    version: '1.0.0',
+    message: '✅ Parañaledge Library Backend v1.1 - Running Successfully', 
+    version: '1.1.0',
     status: 'operational',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
   });
 });
 
