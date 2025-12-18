@@ -13,7 +13,7 @@ const bookmarksRoutes = require('./routes/bookmarkRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 5050;
+const PORT = parseInt(process.env.PORT) || 5050;
 
 // Middleware
 const corsOptions = {
@@ -85,7 +85,11 @@ app.use((err, req, res, next) => {
 // Start server
 const { startReservationExpirationCheck } = require('./utils/reservationManager');
 
-app.listen(PORT, () => {
+console.log('About to start server on port:', PORT);
+console.log('PORT variable value:', PORT, 'Type:', typeof PORT);
+
+const server = app.listen(PORT, () => {
+  console.log('✅ INSIDE LISTEN CALLBACK - Server is now listening!');
   console.log(`
   ╔════════════════════════════════════════╗
   ║   🚀 Parañaledge Backend Running      ║
@@ -93,6 +97,25 @@ app.listen(PORT, () => {
   ║   Env: ${(process.env.NODE_ENV || 'production').padEnd(31)}║
   ╚════════════════════════════════════════╝
   `);
-  startReservationExpirationCheck();
-  console.log('📅 Reservation expiration checker started');
+  try {
+    startReservationExpirationCheck();
+    console.log('📅 Reservation expiration checker started');
+  } catch (err) {
+    console.error('Error starting reservation checker:', err);
+  }
+});
+
+console.log('✅ app.listen() has been called');
+
+server.on('error', (err) => {
+  console.error('Server error:', err);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception:', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled rejection:', err);
 });
