@@ -200,6 +200,13 @@ router.post('/chat', async (req, res) => {
             if (contentType.includes('application/json')) {
               const data = await aiRes.json();
               console.log('[Google AI] Response data:', JSON.stringify(data).substring(0, 500));
+              
+              // Check if response contains an error (Google returns errors as valid JSON)
+              if (data?.error) {
+                console.error('[Google AI] Error in response:', data.error);
+                throw new Error(`Google API error: ${data.error.message || 'Unknown error'}`);
+              }
+              
               // Extract text from Gemini generateContent response: candidates[0].content.parts[0].text
               const reply = (data?.candidates?.[0]?.content?.parts?.[0]?.text) ||
                 (data?.candidates?.[0]?.output) ||
