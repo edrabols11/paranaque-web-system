@@ -143,6 +143,7 @@ router.post('/chat', async (req, res) => {
     const groqApiKey = process.env.GROQ_API_KEY;
     if (groqApiKey && !groqApiKey.includes('your_')) {
       console.log('[AI Chat] Attempting Groq provider...');
+      console.log('[Groq] API Key present:', !!groqApiKey);
       try {
         const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
@@ -161,6 +162,8 @@ router.post('/chat', async (req, res) => {
           })
         });
 
+        console.log('[Groq] Response status:', groqRes.status);
+
         if (!groqRes.ok) {
           const errorData = await groqRes.json();
           console.error('[Groq] Error response:', errorData);
@@ -169,12 +172,14 @@ router.post('/chat', async (req, res) => {
 
         const groqData = await groqRes.json();
         const reply = groqData?.choices?.[0]?.message?.content || 'No response from AI';
-        console.log('[Groq] Successfully got response');
+        console.log('[Groq] ✅ Successfully got response from Groq');
         return res.json({ reply, provider: 'groq', books: contextBooks });
       } catch (err) {
         console.error('❌ Groq error:', err.message);
-        console.warn('⚠️  Falling back to mock mode');
+        console.warn('⚠️  Groq failed, falling back to mock mode with database search');
       }
+    } else {
+      console.warn('⚠️  GROQ_API_KEY not configured, using mock mode');
     }
 
     // Fallback: Mock provider with real database search
