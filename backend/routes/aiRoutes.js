@@ -128,9 +128,7 @@ router.post('/chat', async (req, res) => {
   if (!message) return res.status(400).json({ error: 'Missing message' });
 
   console.log(`[AI Chat] Received message: "${message}"`);
-  const aiProvider = (process.env.AI_PROVIDER || 'mock').toLowerCase();
-  console.log(`[AI Chat] Provider: ${aiProvider}`);
-
+  
   try {
     // Always search for books relevant to the query
     console.log('[AI Chat] Searching books in database...');
@@ -141,134 +139,9 @@ router.post('/chat', async (req, res) => {
 
     const systemPrompt = buildSystemPrompt(contextBooks);
 
-    // FORCE MOCK MODE for now due to leaked Google API key
-    // Only use external AI providers if explicitly and safely configured
-    if (aiProvider === 'google' && process.env.GOOGLE_API_KEY && !process.env.GOOGLE_API_KEY.includes('your_new')) {
-      console.log('[AI Chat] Attempting Google provider...');
-      const endpoint = process.env.AI_ENDPOINT;
-      if (!endpoint) {
-        console.warn('⚠️  AI_ENDPOINT not configured, falling back to mock mode');
-      } else {
-        const googleApiKey = process.env.GOOGLE_API_KEY;
-        try {
-          const url = endpoint.includes('?') ? `${endpoint}&key=${googleApiKey}` : `${endpoint}?key=${googleApiKey}`;
-
-          // IMPORTANT: Inject system prompt into the message to force Google to use real books
-          const combinedMessage = `${systemPrompt}\n\nUser: ${message}`;
-
-          // Send request body compatible with generateContent (newer Gemini API)
-          const body = {
-            contents: [{
-              parts: [{
-                text: combinedMessage
-              }]
-            }]
-          };
-
-          console.log('[Google AI] Sending combined prompt with system instructions + user message');
-          console.log('[Google AI] Books in context:', contextBooks.length);
-
-          // Add timeout to prevent hanging (10 seconds max)
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Google API request timeout after 10 seconds')), 10000)
-          );
-
-          const aiRes = await Promise.race([
-            fetch(url, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(body)
-            }),
-            timeoutPromise
-          ]);
-          console.log('[Google AI] Response status:', aiRes.status);
-
-          // Check if the response is an error (4xx or 5xx)
-          if (!aiRes.ok) {
-            const contentType = aiRes.headers.get('content-type') || '';
-            if (contentType.includes('application/json')) {
-              const errorData = await aiRes.json();
-              console.error('[Google AI] API returned error:', errorData);
-              throw new Error(`Google API error ${aiRes.status}: ${errorData?.error?.message || 'Unknown error'}`);
-            } else {
-              const errorText = await aiRes.text();
-              throw new Error(`Google API error ${aiRes.status}: ${errorText}`);
-            }
-          }
-
-          const contentType = aiRes.headers.get('content-type') || '';
-          if (contentType.includes('application/json')) {
-            const data = await aiRes.json();
-            console.log('[Google AI] Response data:', JSON.stringify(data).substring(0, 500));
-            
-            // Check if response contains an error (Google returns errors as valid JSON)
-            if (data?.error) {
-              console.error('[Google AI] Error in response:', data.error);
-              throw new Error(`Google API error: ${data.error.message || 'Unknown error'}`);
-            }
-            
-            // Extract text from Gemini generateContent response: candidates[0].content.parts[0].text
-            const reply = (data?.candidates?.[0]?.content?.parts?.[0]?.text) ||
-              (data?.candidates?.[0]?.output) ||
-              (data?.candidates?.[0]?.content) ||
-              (data?.outputText) ||
-              JSON.stringify(data);
-            return res.json({ reply, raw: data });
-          }
-
-          const text = await aiRes.text();
-          return res.json({ reply: text });
-        } catch (err) {
-          console.error('❌ Google AI error:', err.message);
-          console.warn('⚠️  Falling back to mock mode due to Google API error');
-          // Fall through to mock provider
-        }
-      }
-      // If we reach here, Google provider failed or was skipped, fall through to mock
-    }
-
-    if (aiProvider === 'openai') {
-      const key = process.env.OPENAI_API_KEY;
-      if (!key || key.includes('your_')) {
-        console.warn('⚠️  OPENAI_API_KEY not configured, falling back to mock');
-      } else {
-        try {
-          // Use Chat Completions with system context
-          const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${key}`
-            },
-            body: JSON.stringify({
-              model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
-              messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: message }
-              ],
-              max_tokens: 600
-            })
-          });
-
-          const contentType = openaiRes.headers.get('content-type') || '';
-          if (contentType.includes('application/json')) {
-            const data = await openaiRes.json();
-            const reply = data?.choices?.[0]?.message?.content || JSON.stringify(data);
-            return res.json({ reply, raw: data });
-          }
-
-          const text = await openaiRes.text();
-          return res.json({ reply: text });
-        } catch (err) {
-          console.error('❌ OpenAI error:', err.message);
-          console.warn('⚠️  Falling back to mock mode due to OpenAI error');
-        }
-      }
-    }
-
-    // Mock provider: intelligent mock reply with REAL book context
-    // (fallback for Google/OpenAI failures or when AI_PROVIDER=mock)
-    console.log('[AI Chat] Using mock provider');
+    // ⚠️  IMPORTANT: Google API key is compromised - using mock mode only
+    // For future: Set AI_PROVIDER environment variable to switch providers
+    console.log('[AI Chat] Using mock provider (real database search)');
     let mockReply = '';
     
     if (contextBooks && contextBooks.length > 0) {
