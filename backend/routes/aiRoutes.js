@@ -139,8 +139,45 @@ router.post('/chat', async (req, res) => {
 
     const systemPrompt = buildSystemPrompt(contextBooks);
 
-    // ⚠️  IMPORTANT: Google API key is compromised - using mock mode only
-    // For future: Set AI_PROVIDER environment variable to switch providers
+    // Try Groq AI first (free, fast, no rate limits)
+    const groqApiKey = process.env.GROQ_API_KEY;
+    if (groqApiKey && !groqApiKey.includes('your_')) {
+      console.log('[AI Chat] Attempting Groq provider...');
+      try {
+        const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${groqApiKey}`
+          },
+          body: JSON.stringify({
+            model: 'mixtral-8x7b-32768',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: message }
+            ],
+            max_tokens: 600,
+            temperature: 0.7
+          })
+        });
+
+        if (!groqRes.ok) {
+          const errorData = await groqRes.json();
+          console.error('[Groq] Error response:', errorData);
+          throw new Error(`Groq error: ${errorData?.error?.message || 'Unknown error'}`);
+        }
+
+        const groqData = await groqRes.json();
+        const reply = groqData?.choices?.[0]?.message?.content || 'No response from AI';
+        console.log('[Groq] Successfully got response');
+        return res.json({ reply, provider: 'groq', books: contextBooks });
+      } catch (err) {
+        console.error('❌ Groq error:', err.message);
+        console.warn('⚠️  Falling back to mock mode');
+      }
+    }
+
+    // Fallback: Mock provider with real database search
     console.log('[AI Chat] Using mock provider (real database search)');
     let mockReply = '';
     
