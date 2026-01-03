@@ -158,7 +158,7 @@ router.post('/chat', async (req, res) => {
             'Authorization': `Bearer ${groqApiKey}`
           },
           body: JSON.stringify({
-            model: 'llama-3.1-70b-versatile',  // Updated to supported model
+            model: 'llama-3.3-70b-specdec',  // Latest Groq supported model
             messages: [
               { 
                 role: 'system', 
