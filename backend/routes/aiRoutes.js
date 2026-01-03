@@ -140,9 +140,13 @@ router.post('/chat', async (req, res) => {
 
     const systemPrompt = buildSystemPrompt(contextBooks);
 
-    // Try Groq AI first (free, fast, with library context) - with timeout
+    // Try Groq AI first (if enabled) - with timeout
+    // NOTE: Groq models are frequently deprecated. To use Groq, update the model name
+    // in .env or check https://console.groq.com/docs/models for available models
     const groqApiKey = process.env.GROQ_API_KEY;
-    if (groqApiKey && !groqApiKey.includes('your_')) {
+    const useGroq = process.env.USE_GROQ === 'true'; // Explicitly enable with env var
+    
+    if (useGroq && groqApiKey && !groqApiKey.includes('your_')) {
       console.log('[AI Chat] 🚀 Attempting Groq AI with 5 second timeout...');
       console.log('[Groq] API Key configured:', !!groqApiKey);
       console.log('[Groq] Books in context:', contextBooks.length);
@@ -158,7 +162,7 @@ router.post('/chat', async (req, res) => {
             'Authorization': `Bearer ${groqApiKey}`
           },
           body: JSON.stringify({
-            model: 'llama-3.3-70b-specdec',  // Latest Groq supported model
+            model: process.env.GROQ_MODEL || 'llama-3.3-70b-specdec',  // Use env var for model
             messages: [
               { 
                 role: 'system', 
@@ -200,10 +204,11 @@ router.post('/chat', async (req, res) => {
         console.warn('[Groq] ⚠️  Groq failed, falling back to mock mode with real library data');
       }
     } else {
-      console.warn('[Groq] ⚠️  GROQ_API_KEY not configured, using mock mode');
+      console.log('[AI Chat] 📚 Using Mock Mode (Groq disabled by default - searches your real library)');
     }
 
-    // Fallback: Mock provider with REAL book context from database
+    // DEFAULT: Mock provider with REAL book context from database
+    // This is reliable, fast, and always works!
     console.log('[AI Chat] 📚 Using mock provider (searches your real library database)');
     let mockReply = '';
     
