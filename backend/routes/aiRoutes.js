@@ -140,11 +140,12 @@ router.post('/chat', async (req, res) => {
 
     const systemPrompt = buildSystemPrompt(contextBooks);
 
-    // Try Groq AI first (free, fast, no rate limits) - with timeout
+    // Try Groq AI first (free, fast, with library context) - with timeout
     const groqApiKey = process.env.GROQ_API_KEY;
     if (groqApiKey && !groqApiKey.includes('your_')) {
-      console.log('[AI Chat] Attempting Groq provider with 5 second timeout...');
-      console.log('[Groq] API Key present:', !!groqApiKey);
+      console.log('[AI Chat] 🚀 Attempting Groq AI with 5 second timeout...');
+      console.log('[Groq] API Key configured:', !!groqApiKey);
+      console.log('[Groq] Books in context:', contextBooks.length);
       try {
         // Add abort timeout
         const controller = new AbortController();
@@ -159,8 +160,14 @@ router.post('/chat', async (req, res) => {
           body: JSON.stringify({
             model: 'mixtral-8x7b-32768',
             messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: message }
+              { 
+                role: 'system', 
+                content: systemPrompt  // This includes all the book context!
+              },
+              { 
+                role: 'user', 
+                content: message 
+              }
             ],
             max_tokens: 600,
             temperature: 0.7
@@ -174,24 +181,30 @@ router.post('/chat', async (req, res) => {
 
         if (!groqRes.ok) {
           const errorData = await groqRes.json();
-          console.error('[Groq] Error response:', errorData);
+          console.error('[Groq] ❌ API error:', errorData);
           throw new Error(`Groq error: ${errorData?.error?.message || 'Unknown error'}`);
         }
 
         const groqData = await groqRes.json();
-        const reply = groqData?.choices?.[0]?.message?.content || 'No response from AI';
-        console.log('[Groq] ✅ Successfully got response from Groq');
-        return res.json({ reply, provider: 'groq', books: contextBooks });
+        console.log('[Groq] Response received');
+        const reply = groqData?.choices?.[0]?.message?.content || 'No response from Groq';
+        
+        if (reply && reply.length > 0) {
+          console.log('[Groq] ✅ Successfully got response from Groq AI');
+          return res.json({ reply, provider: 'groq', books: contextBooks });
+        } else {
+          throw new Error('Empty response from Groq');
+        }
       } catch (err) {
-        console.error('❌ Groq error:', err.message);
-        console.warn('⚠️  Groq failed, falling back to mock mode with database search');
+        console.error('[Groq] ❌ Error:', err.message);
+        console.warn('[Groq] ⚠️  Groq failed, falling back to mock mode with real library data');
       }
     } else {
-      console.warn('⚠️  GROQ_API_KEY not configured, using mock mode');
+      console.warn('[Groq] ⚠️  GROQ_API_KEY not configured, using mock mode');
     }
 
-    // Fallback: Mock provider with real database search
-    console.log('[AI Chat] Using mock provider (real database search)');
+    // Fallback: Mock provider with REAL book context from database
+    console.log('[AI Chat] 📚 Using mock provider (searches your real library database)');
     let mockReply = '';
     
     if (contextBooks && contextBooks.length > 0) {
