@@ -183,6 +183,19 @@ router.post('/chat', async (req, res) => {
             ]);
             console.log('[Google AI] Response status:', aiRes.status);
 
+            // Check if the response is an error (4xx or 5xx)
+            if (!aiRes.ok) {
+              const contentType = aiRes.headers.get('content-type') || '';
+              if (contentType.includes('application/json')) {
+                const errorData = await aiRes.json();
+                console.error('[Google AI] API returned error:', errorData);
+                throw new Error(`Google API error ${aiRes.status}: ${errorData?.error?.message || 'Unknown error'}`);
+              } else {
+                const errorText = await aiRes.text();
+                throw new Error(`Google API error ${aiRes.status}: ${errorText}`);
+              }
+            }
+
             const contentType = aiRes.headers.get('content-type') || '';
             if (contentType.includes('application/json')) {
               const data = await aiRes.json();
