@@ -93,6 +93,10 @@ app.listen(PORT, () => {
   ║   Env: ${(process.env.NODE_ENV || 'production').padEnd(31)}║
   ╚════════════════════════════════════════╝
   `);
-  startReservationExpirationCheck();
-  console.log('📅 Reservation expiration checker started');
+  try {
+    startReservationExpirationCheck();
+    console.log('📅 Reservation expiration checker started');
+  } catch (err) {
+    console.error('⚠️  Reservation expiration checker error:', err.message);
+  }
 });

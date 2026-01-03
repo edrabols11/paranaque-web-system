@@ -19,12 +19,16 @@ const User = require('../models/User');
 // Helper function to search books in database
 async function searchBooksInDB(query) {
   try {
+    console.log(`[searchBooksInDB] Searching for: "${query}"`);
+    
     // If no query or very short, return all available books
     if (!query || query.trim().length < 2) {
+      console.log('[searchBooksInDB] Empty query, fetching all available books');
       const books = await Book.find({
         archived: false,
         availableStock: { $gt: 0 }
-      }).limit(12).select('title author year availableStock publisher location genre');
+      }).limit(12).select('title author year availableStock publisher location genre').maxTimeMS(5000);
+      console.log(`[searchBooksInDB] Found ${books.length} books`);
       return books;
     }
 
@@ -34,27 +38,33 @@ async function searchBooksInDB(query) {
     if (queryLower.includes('available') || queryLower.includes('what') || 
         queryLower.includes('show') || queryLower.includes('have') ||
         queryLower.includes('list')) {
+      console.log('[searchBooksInDB] User asking for available books');
       const books = await Book.find({
         archived: false,
         availableStock: { $gt: 0 }
-      }).limit(15).select('title author year availableStock publisher location genre');
+      }).limit(15).select('title author year availableStock publisher location genre').maxTimeMS(5000);
       return books;
     }
 
     // Multi-term search for flexible matching
     const searchTerms = query.toLowerCase().split(/\s+/).filter(t => t.length > 1);
-    const searchRegex = searchTerms.map(term => new RegExp(term, 'i'));
+    console.log(`[searchBooksInDB] Search terms: ${searchTerms.join(', ')}`);
 
-    // Search by title, author, publisher, genre
+    // Search by title, author, publisher, genre - use $regex operator
+    const orConditions = [];
+    searchTerms.forEach(term => {
+      orConditions.push({ title: { $regex: term, $options: 'i' } });
+      orConditions.push({ author: { $regex: term, $options: 'i' } });
+      orConditions.push({ publisher: { $regex: term, $options: 'i' } });
+      orConditions.push({ genre: { $regex: term, $options: 'i' } });
+    });
+
     const books = await Book.find({
       archived: false,
-      $or: [
-        { title: { $in: searchRegex } },
-        { author: { $in: searchRegex } },
-        { publisher: { $in: searchRegex } },
-        { genre: { $in: searchRegex } }
-      ]
-    }).limit(15).select('title author year availableStock publisher location genre');
+      $or: orConditions
+    }).limit(15).select('title author year availableStock publisher location genre').maxTimeMS(5000);
+
+    console.log(`[searchBooksInDB] Initial search found ${books.length} books`);
 
     // If found results, prioritize available books
     if (books && books.length > 0) {
@@ -62,17 +72,19 @@ async function searchBooksInDB(query) {
     }
 
     // If no results, try partial matching
+    console.log('[searchBooksInDB] No results from initial search, trying partial match');
     const partialBooks = await Book.find({
       archived: false,
       $or: [
         { title: { $regex: query, $options: 'i' } },
         { author: { $regex: query, $options: 'i' } }
       ]
-    }).limit(10).select('title author year availableStock publisher location genre');
+    }).limit(10).select('title author year availableStock publisher location genre').maxTimeMS(5000);
 
+    console.log(`[searchBooksInDB] Partial search found ${partialBooks ? partialBooks.length : 0} books`);
     return partialBooks || [];
   } catch (err) {
-    console.error('Book search error:', err);
+    console.error('[searchBooksInDB] Error:', err.message);
     return [];
   }
 }
@@ -115,13 +127,18 @@ router.post('/chat', async (req, res) => {
   const { message } = req.body || {};
   if (!message) return res.status(400).json({ error: 'Missing message' });
 
+  console.log(`[AI Chat] Received message: "${message}"`);
+  console.log(`[AI Chat] Provider: ${process.env.AI_PROVIDER || 'mock'}`);
+
   const provider = process.env.AI_PROVIDER || 'mock';
 
   try {
     // Always search for books relevant to the query
+    console.log('[AI Chat] Searching books in database...');
     let contextBooks = [];
     // Search for relevant books
     contextBooks = await searchBooksInDB(message);
+    console.log(`[AI Chat] Found ${contextBooks.length} context books`);
 
     const systemPrompt = buildSystemPrompt(contextBooks);
 
@@ -228,9 +245,11 @@ router.post('/chat', async (req, res) => {
 
     // Mock provider: intelligent mock reply with REAL book context
     // (fallback for Google/OpenAI failures or when AI_PROVIDER=mock)
+    console.log('[AI Chat] Using mock provider');
     let mockReply = '';
     
     if (contextBooks && contextBooks.length > 0) {
+      console.log(`[AI Chat] Generating reply with ${contextBooks.length} books`);
       mockReply = `Welcome to Parañaledge Library.\n\n`;
       mockReply += `AVAILABLE BOOKS (${contextBooks.length} found)\n`;
       mockReply += `${'='.repeat(70)}\n\n`;
@@ -274,9 +293,11 @@ router.post('/chat', async (req, res) => {
       }
     }
     
+    console.log('[AI Chat] Sending response with mock reply');
     return res.json({ reply: mockReply, books: contextBooks });
   } catch (err) {
-    console.error('AI proxy error:', err);
+    console.error('[AI Chat] Error:', err.message);
+    console.error('[AI Chat] Stack:', err.stack);
     return res.status(500).json({ error: 'AI request failed', details: err.message });
   }
 });
