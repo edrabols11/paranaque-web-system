@@ -43,9 +43,19 @@ function getFullImageUrl(imageField) {
     return imageField;
   }
   
+  // Fix corrupted file extensions (.jpgi -> .jpg)
+  let cleanPath = imageField.replace(/\.jpgi$/i, '.jpg');
+  
   // If just a filename/path, construct Supabase URL
   const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://rqseuhdpktquhlqojoqg.supabase.co';
-  return `${supabaseUrl}/storage/v1/object/public/book_bucket/${imageField}`;
+  
+  // Check if path includes directory (profile/, etc)
+  if (cleanPath.includes('/')) {
+    return `${supabaseUrl}/storage/v1/object/public/book_bucket/${cleanPath}`;
+  } else {
+    // If just filename, assume it's in profile directory
+    return `${supabaseUrl}/storage/v1/object/public/book_bucket/profile/${cleanPath}`;
+  }
 }
 
 module.exports = { uploadBase64ToSupabase, getFullImageUrl };
