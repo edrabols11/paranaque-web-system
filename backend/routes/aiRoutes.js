@@ -127,7 +127,8 @@ router.post('/chat', async (req, res) => {
   const { message } = req.body || {};
   if (!message) return res.status(400).json({ error: 'Missing message' });
 
-  console.log(`[AI Chat] Received message: "${message}"`);
+  console.log(`[AI Chat] ✅ Received message: "${message}"`);
+  console.log('[AI Chat] 🚀 Using Groq AI or Mock Mode only - NO Google API');
   
   try {
     // Always search for books relevant to the query
