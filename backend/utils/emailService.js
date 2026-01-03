@@ -1,24 +1,45 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-// Create a test account if needed, or use your own SMTP settings
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_PASS
-  },
-  connectionTimeout: 10000,
-  socketTimeout: 10000,
-  pool: {
-    maxConnections: 1
+// Lazy initialize transporter - only create when actually needed
+let transporter = null;
+let emailConfigured = false;
+
+const getTransporter = () => {
+  if (!transporter) {
+    try {
+      transporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        auth: {
+          user: process.env.GMAIL_USER,
+          pass: process.env.GMAIL_PASS
+        },
+        connectionTimeout: 10000,
+        socketTimeout: 10000,
+        pool: {
+          maxConnections: 1
+        }
+      });
+      emailConfigured = true;
+      console.log('📧 Email service configured');
+    } catch (error) {
+      console.error('⚠️  Failed to configure email service:', error.message);
+      emailConfigured = false;
+    }
   }
-});
+  return transporter;
+};
 
 const sendEmail = async ({ to, subject, text, html }) => {
   try {
+    const transporter = getTransporter();
+    if (!transporter) {
+      console.warn('⚠️  Email service not configured, skipping email');
+      return { messageId: 'mock-' + Date.now() };
+    }
+    
     const info = await transporter.sendMail({
       from: `"Library System" <${process.env.GMAIL_USER}>`,
       to,
@@ -26,11 +47,12 @@ const sendEmail = async ({ to, subject, text, html }) => {
       text,
       html
     });
-    console.log('Email sent:', info.messageId);
+    console.log('📧 Email sent:', info.messageId);
     return info;
   } catch (error) {
-    console.error('Error sending email:', error);
-    throw error;
+    console.error('⚠️  Error sending email:', error.message);
+    // Don't crash - just log the error and continue
+    return { messageId: 'error-' + Date.now(), error: error.message };
   }
 };
 
