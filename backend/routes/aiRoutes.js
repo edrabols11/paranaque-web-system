@@ -140,9 +140,71 @@ router.post('/chat', async (req, res) => {
 
     const systemPrompt = buildSystemPrompt(contextBooks);
 
-    // Try Groq AI first (if enabled) - with timeout
-    // NOTE: Groq models are frequently deprecated. To use Groq, update the model name
-    // in .env or check https://console.groq.com/docs/models for available models
+    // Try Google Gemini API first (free tier: 50 req/min)
+    const googleApiKey = process.env.GOOGLE_API_KEY;
+    
+    if (googleApiKey && !googleApiKey.includes('your_')) {
+      console.log('[AI Chat] 🚀 Attempting Google Gemini API...');
+      console.log('[Google] API Key configured:', !!googleApiKey);
+      console.log('[Google] Books in context:', contextBooks.length);
+      try {
+        // Add abort timeout
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+        
+        const googleRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${googleApiKey}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: 'user',
+                parts: [
+                  {
+                    text: `${systemPrompt}\n\nUser question: ${message}`
+                  }
+                ]
+              }
+            ],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 600,
+            }
+          }),
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeout);
+
+        console.log('[Google] Response status:', googleRes.status);
+
+        if (!googleRes.ok) {
+          const errorData = await googleRes.json();
+          console.error('[Google] ❌ API error:', errorData);
+          throw new Error(`Google error: ${errorData?.error?.message || 'Unknown error'}`);
+        }
+
+        const googleData = await googleRes.json();
+        console.log('[Google] Response received');
+        const reply = googleData?.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Google Gemini';
+        
+        if (reply && reply.length > 0) {
+          console.log('[Google] ✅ Successfully got response from Google Gemini');
+          return res.json({ reply, provider: 'google', books: contextBooks });
+        } else {
+          throw new Error('Empty response from Google Gemini');
+        }
+      } catch (err) {
+        console.error('[Google] ❌ Error:', err.message);
+        console.warn('[Google] ⚠️  Google Gemini failed, falling back to mock mode with real library data');
+      }
+    } else {
+      console.log('[AI Chat] 📚 Using Mock Mode (Google API not configured)');
+    }
+
+    // Try Groq AI (if enabled) - with timeout
     const groqApiKey = process.env.GROQ_API_KEY;
     const useGroq = process.env.USE_GROQ === 'true'; // Explicitly enable with env var
     
@@ -203,8 +265,6 @@ router.post('/chat', async (req, res) => {
         console.error('[Groq] ❌ Error:', err.message);
         console.warn('[Groq] ⚠️  Groq failed, falling back to mock mode with real library data');
       }
-    } else {
-      console.log('[AI Chat] 📚 Using Mock Mode (Groq disabled by default - searches your real library)');
     }
 
     // DEFAULT: Mock provider with REAL book context from database
