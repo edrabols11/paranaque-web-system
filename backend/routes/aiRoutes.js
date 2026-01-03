@@ -152,7 +152,7 @@ router.post('/chat', async (req, res) => {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 8000); // 8 second timeout
         
-        const googleRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${googleApiKey}`, {
+        const googleRes = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${googleApiKey}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
