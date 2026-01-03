@@ -17,12 +17,10 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT) : 5050;
 
 // Middleware
 const corsOptions = {
-  origin: [
-    'https://paranaque-web-system.onrender.com',
-    'https://paranaledge-y7z1.onrender.com',
-    'http://localhost:3000',
-    'http://localhost:5050'
-  ],
+  origin: function(origin, callback) {
+    // Allow any origin (for development/production flexibility)
+    callback(null, true);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
