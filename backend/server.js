@@ -21,18 +21,15 @@ const corsOptions = {
     'https://paranaque-web-system.onrender.com',
     'https://paranaledge-y7z1.onrender.com',
     'http://localhost:3000',
-    'http://localhost:5050',
-    /vercel\.app$/, // Allow all Vercel deployments
-    /paranaledge/i  // Allow any domain with 'paranaledge'
+    'http://localhost:5050'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 };
 
+// Allow CORS and handle preflight
 app.use(cors(corsOptions));
-
-// Preflight requests
 app.options('*', cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
