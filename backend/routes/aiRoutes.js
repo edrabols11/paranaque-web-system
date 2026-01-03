@@ -140,12 +140,16 @@ router.post('/chat', async (req, res) => {
 
     const systemPrompt = buildSystemPrompt(contextBooks);
 
-    // Try Groq AI first (free, fast, no rate limits)
+    // Try Groq AI first (free, fast, no rate limits) - with timeout
     const groqApiKey = process.env.GROQ_API_KEY;
     if (groqApiKey && !groqApiKey.includes('your_')) {
-      console.log('[AI Chat] Attempting Groq provider...');
+      console.log('[AI Chat] Attempting Groq provider with 5 second timeout...');
       console.log('[Groq] API Key present:', !!groqApiKey);
       try {
+        // Add abort timeout
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        
         const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -160,8 +164,11 @@ router.post('/chat', async (req, res) => {
             ],
             max_tokens: 600,
             temperature: 0.7
-          })
+          }),
+          signal: controller.signal
         });
+        
+        clearTimeout(timeout);
 
         console.log('[Groq] Response status:', groqRes.status);
 
