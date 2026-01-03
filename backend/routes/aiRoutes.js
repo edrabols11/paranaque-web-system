@@ -151,78 +151,77 @@ router.post('/chat', async (req, res) => {
       } else {
         const googleApiKey = process.env.GOOGLE_API_KEY;
         try {
-            const url = endpoint.includes('?') ? `${endpoint}&key=${googleApiKey}` : `${endpoint}?key=${googleApiKey}`;
+          const url = endpoint.includes('?') ? `${endpoint}&key=${googleApiKey}` : `${endpoint}?key=${googleApiKey}`;
 
-            // IMPORTANT: Inject system prompt into the message to force Google to use real books
-            const combinedMessage = `${systemPrompt}\n\nUser: ${message}`;
+          // IMPORTANT: Inject system prompt into the message to force Google to use real books
+          const combinedMessage = `${systemPrompt}\n\nUser: ${message}`;
 
-            // Send request body compatible with generateContent (newer Gemini API)
-            const body = {
-              contents: [{
-                parts: [{
-                  text: combinedMessage
-                }]
+          // Send request body compatible with generateContent (newer Gemini API)
+          const body = {
+            contents: [{
+              parts: [{
+                text: combinedMessage
               }]
-            };
+            }]
+          };
 
-            console.log('[Google AI] Sending combined prompt with system instructions + user message');
-            console.log('[Google AI] Books in context:', contextBooks.length);
+          console.log('[Google AI] Sending combined prompt with system instructions + user message');
+          console.log('[Google AI] Books in context:', contextBooks.length);
 
-            // Add timeout to prevent hanging (10 seconds max)
-            const timeoutPromise = new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('Google API request timeout after 10 seconds')), 10000)
-            );
+          // Add timeout to prevent hanging (10 seconds max)
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Google API request timeout after 10 seconds')), 10000)
+          );
 
-            const aiRes = await Promise.race([
-              fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-              }),
-              timeoutPromise
-            ]);
-            console.log('[Google AI] Response status:', aiRes.status);
+          const aiRes = await Promise.race([
+            fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body)
+            }),
+            timeoutPromise
+          ]);
+          console.log('[Google AI] Response status:', aiRes.status);
 
-            // Check if the response is an error (4xx or 5xx)
-            if (!aiRes.ok) {
-              const contentType = aiRes.headers.get('content-type') || '';
-              if (contentType.includes('application/json')) {
-                const errorData = await aiRes.json();
-                console.error('[Google AI] API returned error:', errorData);
-                throw new Error(`Google API error ${aiRes.status}: ${errorData?.error?.message || 'Unknown error'}`);
-              } else {
-                const errorText = await aiRes.text();
-                throw new Error(`Google API error ${aiRes.status}: ${errorText}`);
-              }
-            }
-
+          // Check if the response is an error (4xx or 5xx)
+          if (!aiRes.ok) {
             const contentType = aiRes.headers.get('content-type') || '';
             if (contentType.includes('application/json')) {
-              const data = await aiRes.json();
-              console.log('[Google AI] Response data:', JSON.stringify(data).substring(0, 500));
-              
-              // Check if response contains an error (Google returns errors as valid JSON)
-              if (data?.error) {
-                console.error('[Google AI] Error in response:', data.error);
-                throw new Error(`Google API error: ${data.error.message || 'Unknown error'}`);
-              }
-              
-              // Extract text from Gemini generateContent response: candidates[0].content.parts[0].text
-              const reply = (data?.candidates?.[0]?.content?.parts?.[0]?.text) ||
-                (data?.candidates?.[0]?.output) ||
-                (data?.candidates?.[0]?.content) ||
-                (data?.outputText) ||
-                JSON.stringify(data);
-              return res.json({ reply, raw: data });
+              const errorData = await aiRes.json();
+              console.error('[Google AI] API returned error:', errorData);
+              throw new Error(`Google API error ${aiRes.status}: ${errorData?.error?.message || 'Unknown error'}`);
+            } else {
+              const errorText = await aiRes.text();
+              throw new Error(`Google API error ${aiRes.status}: ${errorText}`);
             }
-
-            const text = await aiRes.text();
-            return res.json({ reply: text });
-          } catch (err) {
-            console.error('❌ Google AI error:', err.message);
-            console.warn('⚠️  Falling back to mock mode due to Google API error');
-            // Fall through to mock provider
           }
+
+          const contentType = aiRes.headers.get('content-type') || '';
+          if (contentType.includes('application/json')) {
+            const data = await aiRes.json();
+            console.log('[Google AI] Response data:', JSON.stringify(data).substring(0, 500));
+            
+            // Check if response contains an error (Google returns errors as valid JSON)
+            if (data?.error) {
+              console.error('[Google AI] Error in response:', data.error);
+              throw new Error(`Google API error: ${data.error.message || 'Unknown error'}`);
+            }
+            
+            // Extract text from Gemini generateContent response: candidates[0].content.parts[0].text
+            const reply = (data?.candidates?.[0]?.content?.parts?.[0]?.text) ||
+              (data?.candidates?.[0]?.output) ||
+              (data?.candidates?.[0]?.content) ||
+              (data?.outputText) ||
+              JSON.stringify(data);
+            return res.json({ reply, raw: data });
+          }
+
+          const text = await aiRes.text();
+          return res.json({ reply: text });
+        } catch (err) {
+          console.error('❌ Google AI error:', err.message);
+          console.warn('⚠️  Falling back to mock mode due to Google API error');
+          // Fall through to mock provider
         }
       }
       // If we reach here, Google provider failed or was skipped, fall through to mock
