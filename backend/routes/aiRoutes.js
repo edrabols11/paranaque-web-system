@@ -128,9 +128,8 @@ router.post('/chat', async (req, res) => {
   if (!message) return res.status(400).json({ error: 'Missing message' });
 
   console.log(`[AI Chat] Received message: "${message}"`);
-  console.log(`[AI Chat] Provider: ${process.env.AI_PROVIDER || 'mock'}`);
-
-  const provider = process.env.AI_PROVIDER || 'mock';
+  const aiProvider = (process.env.AI_PROVIDER || 'mock').toLowerCase();
+  console.log(`[AI Chat] Provider: ${aiProvider}`);
 
   try {
     // Always search for books relevant to the query
@@ -142,15 +141,16 @@ router.post('/chat', async (req, res) => {
 
     const systemPrompt = buildSystemPrompt(contextBooks);
 
-    if (provider === 'google') {
+    // FORCE MOCK MODE for now due to leaked Google API key
+    // Only use external AI providers if explicitly and safely configured
+    if (aiProvider === 'google' && process.env.GOOGLE_API_KEY && !process.env.GOOGLE_API_KEY.includes('your_new')) {
+      console.log('[AI Chat] Attempting Google provider...');
       const endpoint = process.env.AI_ENDPOINT;
       if (!endpoint) {
         console.warn('⚠️  AI_ENDPOINT not configured, falling back to mock mode');
-        // Fall through to mock provider
       } else {
         const googleApiKey = process.env.GOOGLE_API_KEY;
-        if (googleApiKey) {
-          try {
+        try {
             const url = endpoint.includes('?') ? `${endpoint}&key=${googleApiKey}` : `${endpoint}?key=${googleApiKey}`;
 
             // IMPORTANT: Inject system prompt into the message to force Google to use real books
@@ -223,44 +223,48 @@ router.post('/chat', async (req, res) => {
             console.warn('⚠️  Falling back to mock mode due to Google API error');
             // Fall through to mock provider
           }
-        } else {
-          console.warn('⚠️  GOOGLE_API_KEY not configured');
         }
       }
-
-      // If we reach here, Google provider failed, fall through to mock
+      // If we reach here, Google provider failed or was skipped, fall through to mock
     }
 
-    if (provider === 'openai') {
+    if (aiProvider === 'openai') {
       const key = process.env.OPENAI_API_KEY;
-      if (!key) return res.status(500).json({ error: 'OPENAI_API_KEY not configured' });
+      if (!key || key.includes('your_')) {
+        console.warn('⚠️  OPENAI_API_KEY not configured, falling back to mock');
+      } else {
+        try {
+          // Use Chat Completions with system context
+          const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${key}`
+            },
+            body: JSON.stringify({
+              model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
+              messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: message }
+              ],
+              max_tokens: 600
+            })
+          });
 
-      // Use Chat Completions with system context
-      const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${key}`
-        },
-        body: JSON.stringify({
-          model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: message }
-          ],
-          max_tokens: 600
-        })
-      });
+          const contentType = openaiRes.headers.get('content-type') || '';
+          if (contentType.includes('application/json')) {
+            const data = await openaiRes.json();
+            const reply = data?.choices?.[0]?.message?.content || JSON.stringify(data);
+            return res.json({ reply, raw: data });
+          }
 
-      const contentType = openaiRes.headers.get('content-type') || '';
-      if (contentType.includes('application/json')) {
-        const data = await openaiRes.json();
-        const reply = data?.choices?.[0]?.message?.content || JSON.stringify(data);
-        return res.json({ reply, raw: data });
+          const text = await openaiRes.text();
+          return res.json({ reply: text });
+        } catch (err) {
+          console.error('❌ OpenAI error:', err.message);
+          console.warn('⚠️  Falling back to mock mode due to OpenAI error');
+        }
       }
-
-      const text = await openaiRes.text();
-      return res.json({ reply: text });
     }
 
     // Mock provider: intelligent mock reply with REAL book context
