@@ -13,7 +13,7 @@ const bookmarksRoutes = require('./routes/bookmarkRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 5050;
+const PORT = process.env.PORT ? parseInt(process.env.PORT) : 5050;
 
 // Middleware
 const corsOptions = {
