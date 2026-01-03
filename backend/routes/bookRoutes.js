@@ -7,7 +7,7 @@ const ArchivedBook = require('../models/ArchivedBook');
 const Transaction = require('../models/Transaction');
 const Log = require('../models/Log');
 const ReservedBook = require('../models/ReservedBook');
-const { uploadBase64ToSupabase } = require('../utils/upload');
+const { uploadBase64ToSupabase, getFullImageUrl } = require('../utils/upload');
 
 const router = express.Router();
 
@@ -158,6 +158,9 @@ router.get("/", async (req, res) => {
         book.availableStock = bookObj.stock;
         needsUpdate = true;
       }
+      
+      // Add full image URL
+      bookObj.image = getFullImageUrl(bookObj.image);
       
       // Save to database if missing values were set
       if (needsUpdate) {

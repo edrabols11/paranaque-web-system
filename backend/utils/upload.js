@@ -29,4 +29,23 @@ async function uploadBase64ToSupabase(base64Data, bucket, path) {
   return `${supabaseUrl}/storage/v1/object/public/${bucket}/${path}`;
 }
 
-module.exports = { uploadBase64ToSupabase };
+// Helper function to build full image URLs
+function getFullImageUrl(imageField) {
+  if (!imageField) return null;
+  
+  // If already a full URL, return as-is
+  if (imageField.startsWith('http://') || imageField.startsWith('https://')) {
+    return imageField;
+  }
+  
+  // If base64 data, return as-is
+  if (imageField.startsWith('data:image/')) {
+    return imageField;
+  }
+  
+  // If just a filename/path, construct Supabase URL
+  const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://rqseuhdpktquhlqojoqg.supabase.co';
+  return `${supabaseUrl}/storage/v1/object/public/book_bucket/${imageField}`;
+}
+
+module.exports = { uploadBase64ToSupabase, getFullImageUrl };
