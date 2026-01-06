@@ -37,8 +37,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "backend": "cd backend && npm start",
-    "backend-dev": "cd backend && npm run dev",
-    "postinstall": "cd backend && npm install"
+    "backend-dev": "cd backend && npm run dev"
   },
   "eslintConfig": {
     "extends": [
