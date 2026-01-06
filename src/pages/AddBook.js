@@ -33,11 +33,33 @@ const AddBook = ({ onBookAdded }) => {
 
     if (name === "image") {
       const file = files[0];
+      
+      // Validate file type
+      if (file && !file.type.startsWith('image/')) {
+        alert("Please select a valid image file");
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file && file.size > 5 * 1024 * 1024) {
+        alert("Image size must be less than 5MB");
+        return;
+      }
+
       setBook({ ...book, image: file });
       setPreview(URL.createObjectURL(file));
 
       const reader = new FileReader();
-      reader.onloadend = () => setBase64Image(reader.result);
+      reader.onloadend = () => {
+        if (reader.result) {
+          console.log("✅ Image converted to base64, size:", reader.result.length);
+          setBase64Image(reader.result);
+        }
+      };
+      reader.onerror = () => {
+        console.error("❌ Error reading image file");
+        alert("Error reading image file. Please try again.");
+      };
       if (file) reader.readAsDataURL(file);
 
       return;
@@ -66,6 +88,13 @@ const AddBook = ({ onBookAdded }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate required fields
+    if (!book.title || !book.author || !book.year || !book.category || !book.stock || !book.location.shelf || !book.location.level) {
+      alert("Please fill in all required fields");
+      return;
+    }
+
     setLoading(true);
 
     const payload = {
@@ -80,6 +109,12 @@ const AddBook = ({ onBookAdded }) => {
       image: base64Image
     };
 
+    console.log("📤 Submitting book with image:", {
+      title: payload.title,
+      hasImage: !!payload.image,
+      imageSize: payload.image ? payload.image.length : 0
+    });
+
     try {
       const res = await fetch("https://paranaledge-y7z1.onrender.com/api/books", {
         method: "POST",
@@ -91,6 +126,7 @@ const AddBook = ({ onBookAdded }) => {
       setLoading(false);
 
       if (res.ok) {
+        console.log("✅ Book added successfully! Image URL:", data.book?.image);
         setShowSuccessModal(true);
         setBook({
           title: "",
@@ -110,12 +146,13 @@ const AddBook = ({ onBookAdded }) => {
 
         if (onBookAdded) onBookAdded();
       } else {
-        alert("Failed to add book: " + data.error);
+        console.error("❌ Failed to add book:", data.error);
+        alert("Failed to add book: " + (data.error || "Unknown error"));
       }
     } catch (err) {
-      console.error(err);
-      alert("Error adding book");
       setLoading(false);
+      console.error("❌ Error adding book:", err);
+      alert("Error adding book: " + (err.message || "Network error"));
     }
   };
 

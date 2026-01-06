@@ -923,4 +923,28 @@ router.post('/cleanup/return-deleted-users', async (req, res) => {
   }
 });
 
+// Diagnostic endpoint to check image URLs
+router.get('/diagnostic/images', async (req, res) => {
+  try {
+    const books = await Book.find({ archived: false }).limit(5).select('title image category');
+    
+    const diagnostics = books.map(book => ({
+      title: book.title,
+      category: book.category,
+      imageField: book.image,
+      imageUrl: getFullImageUrl(book.image),
+      isValid: book.image ? true : false
+    }));
+    
+    res.json({
+      message: 'Image URL Diagnostics',
+      supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
+      books: diagnostics
+    });
+  } catch (err) {
+    console.error('Diagnostic error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
