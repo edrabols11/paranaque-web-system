@@ -75,13 +75,36 @@ const AdminDashboardTable = () => {
               {filteredBooks.map((book) => (
                 <tr key={book._id}>
                   <td>
-                    {book.image && (
+                    {book.image ? (
                       <img
-                        src={book.image ? book.image : ""}
+                        src={book.image}
                         alt={book.title}
                         style={{ width: "60px", height: "80px", objectFit: "cover", borderRadius: "4px", border: "1px solid #ddd" }}
-                        onError={(e) => e.target.style.display = 'none'}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          if (e.target.nextElementSibling) {
+                            e.target.nextElementSibling.style.display = 'flex';
+                          }
+                        }}
                       />
+                    ) : null}
+                    {!book.image && (
+                      <div 
+                        style={{ 
+                          width: "60px", 
+                          height: "80px", 
+                          backgroundColor: '#f0f0f0', 
+                          borderRadius: "4px", 
+                          border: "1px solid #ddd",
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '24px',
+                          color: '#ccc'
+                        }}
+                      >
+                        📖
+                      </div>
                     )}
                   </td>
                   <td>{book.title}</td>

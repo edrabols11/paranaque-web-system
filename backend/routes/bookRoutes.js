@@ -160,7 +160,13 @@ router.get("/", async (req, res) => {
       }
       
       // Add full image URL
-      bookObj.image = getFullImageUrl(bookObj.image);
+      const imageUrl = getFullImageUrl(bookObj.image);
+      bookObj.image = imageUrl;
+      
+      // Log image status for debugging
+      if (!imageUrl) {
+        console.warn(`⚠️  Book "${bookObj.title}" has no image URL`);
+      }
       
       // Save to database if missing values were set
       if (needsUpdate) {
