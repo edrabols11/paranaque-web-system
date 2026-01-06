@@ -14,7 +14,8 @@ const GenreBooks = () => {
 
   const fetchBooks = (p = page) => {
     const limit = 24; // 4 rows x 6 columns
-    fetch(`https://paranaledge-y7z1.onrender.com/api/books?genre=${encodeURIComponent(genre)}&page=${p}&limit=${limit}`)
+    const timestamp = new Date().getTime();
+    fetch(`https://paranaledge-y7z1.onrender.com/api/books?genre=${encodeURIComponent(genre)}&page=${p}&limit=${limit}&_t=${timestamp}`)
       .then((res) => res.json())
       .then((data) => {
         setBooks(data.books || []);

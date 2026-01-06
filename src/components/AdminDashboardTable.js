@@ -14,9 +14,11 @@ const AdminDashboardTable = () => {
   const fetchReservedBooks = async () => {
     try {
       setLoading(true);
-      const response = await fetch('https://paranaledge-y7z1.onrender.com/api/books/');
+      const timestamp = new Date().getTime();
+      const response = await fetch(`https://paranaledge-y7z1.onrender.com/api/books/?_t=${timestamp}`);
       const data = await response.json();
       if (response.ok) {
+        console.log("📚 Admin fetched books:", data.books?.length, "books with images");
         setBooks(data.books || []);
         setError(null);
       } else {

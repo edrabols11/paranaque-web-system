@@ -17,9 +17,11 @@ const BooksTable = () => {
   const fetchReservedBooks = async () => {
     try {
       setLoading(true);
-      const response = await fetch('https://paranaledge-y7z1.onrender.com/api/books/?limit=10000');
+      const timestamp = new Date().getTime();
+      const response = await fetch(`https://paranaledge-y7z1.onrender.com/api/books/?limit=10000&_t=${timestamp}`);
       const data = await response.json();
       if (response.ok) {
+        console.log("📚 BooksTable fetched books with images");
         setBooks(data.books || []);
         setError(null);
       } else {

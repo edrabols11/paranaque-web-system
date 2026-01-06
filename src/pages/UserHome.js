@@ -52,9 +52,12 @@ const UserHome = () => {
   const fetchBooks = () => {
     // Use pagination: 4 rows x 6 columns = 24 items per page
     const limit = 24;
-    fetch(`https://paranaledge-y7z1.onrender.com/api/books?page=${page}&limit=${limit}`)
+    // Add cache busting with timestamp
+    const timestamp = new Date().getTime();
+    fetch(`https://paranaledge-y7z1.onrender.com/api/books?page=${page}&limit=${limit}&_t=${timestamp}`)
       .then((res) => res.json())
       .then((data) => {
+        console.log("📚 Fetched books with images:", data.books?.map(b => ({ title: b.title, hasImage: !!b.image })));
         setBooks(data.books || []);
         setTotalPages(data.totalPages || 1);
       })
@@ -63,7 +66,8 @@ const UserHome = () => {
 
   const fetchAllBooksForRecommendations = async () => {
     try {
-      const res = await fetch("https://paranaledge-y7z1.onrender.com/api/books?limit=10000");
+      const timestamp = new Date().getTime();
+      const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/books?limit=10000&_t=${timestamp}`);
       const data = await res.json();
       setAllBooks(data.books || []);
     } catch (error) {
