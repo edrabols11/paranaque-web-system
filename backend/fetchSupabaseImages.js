@@ -52,12 +52,10 @@ async function fetchAndUpdateImages() {
     // Create a map of supabase files by normalized name
     const supabaseFileMap = {};
     files.forEach(file => {
-      // Extract the title from filename: timestamp-title.jpg
-      const parts = file.name.split('-');
-      if (parts.length >= 2) {
-        const titlePart = parts.slice(1).join('-').replace(/\.jpg$/i, '');
-        supabaseFileMap[titlePart.toLowerCase().trim()] = file.name;
-      }
+      // Extract the title from filename: timestamp-title-book.jpg
+      // Remove -book.jpg suffix and timestamp prefix
+      let titlePart = file.name.replace(/-book\.jpg$/i, '').replace(/^[0-9]+-/, '');
+      supabaseFileMap[titlePart.toLowerCase().trim()] = file.name;
     });
 
     console.log(`\n🔗 Building URL mapping...`);
