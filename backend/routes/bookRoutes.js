@@ -15,15 +15,27 @@ const router = express.Router();
 // Function to get next accession number
 const getNextAccessionNumber = async () => {
   try {
-    const counter = await Counter.findOneAndUpdate(
-      { name: 'accessionNumber' },
-      { $inc: { value: 1 } },
-      { new: true, upsert: true }
-    );
+    // Find or create the counter
+    let counter = await Counter.findOne({ name: 'accessionNumber' });
+    
+    if (!counter) {
+      // Create counter if it doesn't exist
+      counter = await Counter.create({ name: 'accessionNumber', value: 0 });
+      console.log("📊 Created new accession number counter");
+    }
+    
+    // Increment the counter
+    counter.value += 1;
+    await counter.save();
+    
+    console.log("📈 Accession number counter incremented to:", counter.value);
+    
     // Format as 6-digit zero-padded number (e.g., 000001, 000002, etc.)
-    return String(counter.value).padStart(6, '0');
+    const formattedNumber = String(counter.value).padStart(6, '0');
+    console.log("✅ Generated accession number:", formattedNumber);
+    return formattedNumber;
   } catch (err) {
-    console.error('Error getting next accession number:', err);
+    console.error('❌ Error getting next accession number:', err);
     throw err;
   }
 };
@@ -77,7 +89,9 @@ router.post('/', async (req, res) => {
     }
 
     // Auto-generate accession number
+    console.log("📚 Generating accession number for:", title);
     const generatedAccessionNumber = await getNextAccessionNumber();
+    console.log("📚 Generated accession number:", generatedAccessionNumber);
 
     const newBook = new Book({
       title,
@@ -96,16 +110,18 @@ router.post('/', async (req, res) => {
       status: 'available'
     });
     await newBook.save();
+    console.log("✅ Book saved with accession number:", newBook.accessionNumber);
 
     // Log book addition
     await new Log({
       userEmail: userEmail || 'admin',
-      action: `Added new book: ${title}`
+      action: `Added new book: ${title} (Accession: ${generatedAccessionNumber})`
     }).save();
 
     res.status(201).json({ message: 'Book added successfully!', book: newBook });
   } catch (err) {
-    console.error(err);
+    console.error("❌ Error adding book:", err);
+    res.status(500).json({ error: 'Server error while adding book: ' + err.message });
     res.status(500).json({ error: 'Server error while adding book' });
   }
 });
@@ -975,6 +991,77 @@ router.get('/diagnostic/images', async (req, res) => {
   } catch (err) {
     console.error('Diagnostic error:', err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin endpoint to reset accession number counter
+router.post('/admin/reset-counter', async (req, res) => {
+  try {
+    // Get the highest accession number currently in database
+    const books = await Book.find({ accessionNumber: { $regex: /^\d{6}$/ } }).sort({ createdAt: -1 }).limit(1);
+    
+    let newCounterValue = 0;
+    if (books.length > 0) {
+      const lastAccession = parseInt(books[0].accessionNumber);
+      newCounterValue = lastAccession;
+    }
+    
+    // Reset or create counter
+    await Counter.deleteOne({ name: 'accessionNumber' });
+    const counter = await Counter.create({ 
+      name: 'accessionNumber', 
+      value: newCounterValue 
+    });
+    
+    console.log("🔄 Counter reset to:", newCounterValue);
+    
+    res.json({
+      message: 'Counter reset successfully',
+      newValue: newCounterValue,
+      counter
+    });
+  } catch (err) {
+    console.error('❌ Error resetting counter:', err);
+    res.status(500).json({ error: 'Failed to reset counter: ' + err.message });
+  }
+});
+
+// Admin endpoint to fix accession numbers for existing books
+router.post('/admin/fix-accession-numbers', async (req, res) => {
+  try {
+    // Delete counter to start fresh
+    await Counter.deleteOne({ name: 'accessionNumber' });
+    
+    // Get all books, sorted by creation date
+    const books = await Book.find({}).sort({ createdAt: 1 });
+    
+    console.log(`📚 Fixing accession numbers for ${books.length} books`);
+    
+    let counter = 0;
+    const updatePromises = [];
+    
+    for (const book of books) {
+      counter++;
+      const newAccessionNumber = String(counter).padStart(6, '0');
+      updatePromises.push(
+        Book.findByIdAndUpdate(book._id, { accessionNumber: newAccessionNumber })
+      );
+    }
+    
+    await Promise.all(updatePromises);
+    
+    // Create new counter with final value
+    await Counter.create({ name: 'accessionNumber', value: counter });
+    
+    console.log("✅ Fixed accession numbers for", counter, "books");
+    
+    res.json({
+      message: 'Accession numbers fixed successfully',
+      booksFixed: counter
+    });
+  } catch (err) {
+    console.error('❌ Error fixing accession numbers:', err);
+    res.status(500).json({ error: 'Failed to fix accession numbers: ' + err.message });
   }
 });
 
