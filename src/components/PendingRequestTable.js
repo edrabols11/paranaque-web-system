@@ -4,6 +4,7 @@ import '../styles/pending-requests.css';
 
 const PendingRequestTable = () => {
   const [pendingRequests, setPendingRequests] = useState([]);
+  const [reservationRequests, setReservationRequests] = useState([]);
   const [returnRequests, setReturnRequests] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -25,10 +26,15 @@ const PendingRequestTable = () => {
       const response = await fetch('https://paranaledge-y7z1.onrender.com/api/transactions/pending-requests?limit=10000');
       const data = await response.json();
       if (response.ok) {
-        setPendingRequests(data.transactions || []);
+        const allRequests = data.transactions || [];
+        // Separate borrow and reservation requests
+        const borrowRequests = allRequests.filter(req => req.type === 'borrow');
+        const reserveRequests = allRequests.filter(req => req.type === 'reserve');
+        setPendingRequests(borrowRequests);
+        setReservationRequests(reserveRequests);
         setError(null);
       } else {
-        setError(data.message || 'Failed to fetch pending borrows');
+        setError(data.message || 'Failed to fetch pending requests');
       }
     } catch (err) {
       setError('Error connecting to server. Please try again.');
@@ -255,6 +261,11 @@ const PendingRequestTable = () => {
     book.bookTitle.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const filteredReservationRequests = reservationRequests.filter((request) =>
+    request.bookTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    request.userEmail.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const filteredReturnRequests = returnRequests.filter((request) =>
     request.bookTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
     request.userEmail.toLowerCase().includes(searchTerm.toLowerCase())
@@ -280,7 +291,7 @@ const PendingRequestTable = () => {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '1px solid #ddd' }}>
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '1px solid #ddd', flexWrap: 'wrap' }}>
         <button
           onClick={() => setActiveTab('borrow')}
           style={{
@@ -294,6 +305,20 @@ const PendingRequestTable = () => {
           }}
         >
           Borrow Requests ({filteredBorrowRequests.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('reserve')}
+          style={{
+            padding: '10px 20px',
+            borderBottom: activeTab === 'reserve' ? '3px solid #2196F3' : 'none',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            fontWeight: activeTab === 'reserve' ? 'bold' : 'normal',
+            color: activeTab === 'reserve' ? '#2196F3' : '#666'
+          }}
+        >
+          Reserve Requests ({filteredReservationRequests.length})
         </button>
         <button
           onClick={() => setActiveTab('return')}
@@ -349,6 +374,57 @@ const PendingRequestTable = () => {
                               ? handleApprove(request._id)
                               : handleApproveReservation(request._id)
                           }
+                          className="btn approve"
+                        >
+                          Approve
+                        </button>
+
+                        <button
+                          onClick={() => openRejectModal(request)}
+                          className="btn reject"
+                        >
+                          Reject
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Reserve Requests Tab */}
+      {activeTab === 'reserve' && (
+        <>
+          {filteredReservationRequests.length === 0 ? (
+            <div className="empty-state">
+              <img src="/imgs/empty.png" alt="No Data" className="empty-img" />
+              <p>No reserve requests found.</p>
+            </div>
+          ) : (
+            <div className="table-wrapper">
+              <table className="styled-table">
+                <thead>
+                  <tr>
+                    <th>Book Title</th>
+                    <th>User</th>
+                    <th>Date Requested</th>
+                    <th style={{ textAlign: "center" }}>Actions</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {filteredReservationRequests.map((request) => (
+                    <tr key={request._id}>
+                      <td className="title-cell">{request.bookTitle}</td>
+                      <td>{request.userEmail}</td>
+                      <td>{formatDate(request.createdAt)}</td>
+
+                      <td className="action-buttons">
+                        <button
+                          onClick={() => handleApproveReservation(request._id)}
                           className="btn approve"
                         >
                           Approve
