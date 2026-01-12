@@ -48,26 +48,59 @@ const MyShelf = () => {
 
   const handleReturn = async (transactionId) => {
     try {
-      const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/return/${transactionId}`, {
+      // Show a dialog to confirm book condition
+      const { value: condition } = await Swal.fire({
+        title: "Book Condition",
+        input: "select",
+        inputOptions: {
+          good: "Good Condition",
+          damaged: "Damaged",
+          lost: "Lost"
+        },
+        inputValue: "good",
+        showCancelButton: true,
+        confirmButtonText: "Submit Return Request",
+        inputValidator: (value) => {
+          if (!value) {
+            return "Please select a condition";
+          }
+        }
+      });
+
+      if (!condition) return;
+
+      const { value: notes } = await Swal.fire({
+        title: "Additional Notes (Optional)",
+        input: "textarea",
+        inputPlaceholder: "Add any notes about the book condition or return...",
+        showCancelButton: true,
+        confirmButtonText: "Submit Return Request"
+      });
+
+      // Submit return request
+      const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/request-return/${transactionId}`, {
         method: "POST",
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ userEmail })
+        body: JSON.stringify({ 
+          condition,
+          notes: notes || null
+        })
       });
 
       if (res.ok) {
         const data = await res.json();
         await Swal.fire({
           title: "Parañaledge",
-          text: "Book returned successfully!",
+          text: "Return request submitted successfully! The librarian will review and approve it.",
           icon: "success",
           confirmButtonText: "OK"
         });
         fetchTransactions();
       } else {
         // Handle non-JSON responses
-        let errorMessage = "Failed to return book";
+        let errorMessage = "Failed to submit return request";
         const contentType = res.headers.get("content-type");
         if (contentType && contentType.includes("application/json")) {
           const data = await res.json();
@@ -84,7 +117,7 @@ const MyShelf = () => {
       console.error(err);
       await Swal.fire({
         title: "Parañaledge",
-        text: "Error returning book",
+        text: "Error submitting return request",
         icon: "error",
         confirmButtonText: "OK"
       });

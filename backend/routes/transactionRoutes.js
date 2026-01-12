@@ -5,6 +5,7 @@ const Book = require('../models/Book');
 const Log = require('../models/Log');
 const ReservedBook = require('../models/ReservedBook');
 const PendingReservedBook = require('../models/PendingReservedBook');
+const ReturnRequest = require('../models/ReturnRequest');
 const {
   sendReservationPendingEmail,
   sendReservationApprovedEmail,
@@ -542,6 +543,193 @@ router.get('/approved-books', async (req, res) => {
       };
     }));
     res.json(books);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ============ RETURN REQUEST ENDPOINTS ============
+
+// Submit a return request (user side)
+router.post('/request-return/:transactionId', async (req, res) => {
+  try {
+    const transaction = await Transaction.findById(req.params.transactionId);
+    if (!transaction) {
+      return res.status(404).json({ message: 'Transaction not found' });
+    }
+
+    const book = await Book.findById(transaction.bookId);
+    if (!book) {
+      return res.status(404).json({ message: 'Book not found' });
+    }
+
+    const { condition, notes } = req.body;
+
+    // Check if return request already exists for this transaction
+    const existingRequest = await ReturnRequest.findOne({
+      transactionId: req.params.transactionId,
+      status: 'pending'
+    });
+
+    if (existingRequest) {
+      return res.status(400).json({ message: 'Return request already submitted for this book' });
+    }
+
+    // Create return request
+    const returnRequest = new ReturnRequest({
+      transactionId: transaction._id,
+      bookId: transaction.bookId,
+      bookTitle: book.title,
+      userEmail: transaction.userEmail,
+      condition: condition || 'good',
+      notes: notes || null
+    });
+
+    await Promise.all([
+      returnRequest.save(),
+      new Log({
+        userEmail: transaction.userEmail,
+        action: `Submitted return request for book: ${book.title}`
+      }).save()
+    ]);
+
+    res.status(201).json({ 
+      message: 'Return request submitted successfully', 
+      returnRequest 
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Get all pending return requests (librarian view)
+router.get('/return-requests', async (req, res) => {
+  try {
+    const returnRequests = await ReturnRequest.find({ status: 'pending' })
+      .sort({ requestDate: -1 });
+    
+    res.json({ 
+      requests: returnRequests,
+      count: returnRequests.length 
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Get all return requests with any status
+router.get('/return-requests/all', async (req, res) => {
+  try {
+    const returnRequests = await ReturnRequest.find()
+      .sort({ requestDate: -1 });
+    
+    res.json({ 
+      requests: returnRequests,
+      count: returnRequests.length 
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Get user's return requests
+router.get('/return-requests/user/:email', async (req, res) => {
+  try {
+    const returnRequests = await ReturnRequest.find({ userEmail: req.params.email })
+      .sort({ requestDate: -1 });
+    
+    res.json({ 
+      requests: returnRequests,
+      count: returnRequests.length 
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Approve return request (librarian)
+router.put('/return-requests/:requestId/approve', async (req, res) => {
+  try {
+    const { approvedBy } = req.body;
+
+    const returnRequest = await ReturnRequest.findById(req.params.requestId);
+    if (!returnRequest) {
+      return res.status(404).json({ message: 'Return request not found' });
+    }
+
+    const transaction = await Transaction.findById(returnRequest.transactionId);
+    if (!transaction) {
+      return res.status(404).json({ message: 'Transaction not found' });
+    }
+
+    const book = await Book.findById(returnRequest.bookId);
+    if (!book) {
+      return res.status(404).json({ message: 'Book not found' });
+    }
+
+    // Update return request
+    returnRequest.status = 'approved';
+    returnRequest.approvalDate = new Date();
+    returnRequest.approvedBy = approvedBy || 'Librarian';
+
+    // Update transaction
+    transaction.status = 'completed';
+    transaction.returnDate = new Date();
+
+    // Update book - increment availableStock
+    if (transaction.type === 'borrow') {
+      book.availableStock = (book.availableStock || 0) + 1;
+    }
+    book.borrowedBy = null;
+    book.borrowedAt = null;
+
+    await Promise.all([
+      returnRequest.save(),
+      transaction.save(),
+      book.save(),
+      new Log({
+        userEmail: transaction.userEmail,
+        action: `Returned book: ${book.title} (Approved by ${approvedBy || 'Librarian'})`
+      }).save()
+    ]);
+
+    res.json({ 
+      message: 'Return request approved successfully', 
+      returnRequest,
+      transaction 
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Reject return request (librarian)
+router.put('/return-requests/:requestId/reject', async (req, res) => {
+  try {
+    const { rejectionReason, approvedBy } = req.body;
+
+    const returnRequest = await ReturnRequest.findById(req.params.requestId);
+    if (!returnRequest) {
+      return res.status(404).json({ message: 'Return request not found' });
+    }
+
+    // Update return request
+    returnRequest.status = 'rejected';
+    returnRequest.rejectionReason = rejectionReason || 'No reason provided';
+    returnRequest.approvedBy = approvedBy || 'Librarian';
+
+    await Promise.all([
+      returnRequest.save(),
+      new Log({
+        userEmail: returnRequest.userEmail,
+        action: `Return request rejected for book: ${returnRequest.bookTitle}. Reason: ${rejectionReason || 'No reason provided'}`
+      }).save()
+    ]);
+
+    res.json({ 
+      message: 'Return request rejected successfully', 
+      returnRequest 
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
