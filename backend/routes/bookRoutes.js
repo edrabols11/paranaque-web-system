@@ -234,7 +234,7 @@ router.put('/archive/:id', async (req, res) => {
         author: book.author,
         publisher: book.publisher,
         category: book.category,
-        genre: book.genre,
+        genre: book.category || book.genre || 'Unknown', // Use category as fallback for genre
         image: book.image,
         accessionNumber: book.accessionNumber,
         callNumber: book.callNumber,
