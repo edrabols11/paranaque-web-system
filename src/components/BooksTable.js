@@ -72,22 +72,26 @@ const BooksTable = () => {
   const archiveBook = async (bookId) => {
     if (window.confirm("Are you sure you want to archive this book?")) {
       try {
+        console.log("📦 Archiving book with ID:", bookId);
         const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/books/archive/${bookId}`, {
           method: 'PUT',
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status: "Archived" }),
         });
         const data = await res.json();
+        console.log("Archive response status:", res.status, "Data:", data);
+        
         if (res.ok) {
           alert("Book archived successfully!");
           const updatedList = books.filter((book) => book._id !== bookId);
           setBooks(updatedList);
         } else {
-          console.error(data.error);
-          alert(data.error || "Failed to archive book");
+          console.error("❌ Archive failed:", data.error);
+          alert("Failed to archive book: " + (data.error || "Unknown error"));
         }
       } catch (err) {
-        console.error(err);
+        console.error("❌ Error archiving book:", err);
+        alert("Error archiving book: " + err.message);
       }
     }
   };

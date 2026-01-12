@@ -213,17 +213,20 @@ router.get("/", async (req, res) => {
 
 
 router.put('/archive/:id', async (req, res) => {
-  console.log("PUT /archive/:id", req.params.id, req.body.status);
+  console.log("PUT /archive/:id called with ID:", req.params.id, "Body:", req.body);
 
   try {
     const book = await Book.findById(req.params.id);
+    console.log("📚 Book found:", book ? `${book.title} (${book._id})` : 'NOT FOUND');
 
     if (!book) {
+      console.log("❌ Book not found with ID:", req.params.id);
       return res.status(404).json({ error: 'Book not found' });
     }
 
     // If archiving the book
     if (req.body.status === 'Archived') {
+      console.log("🗂️  Archiving book:", book.title);
       // Create archived book record
       const archivedBook = new ArchivedBook({
         title: book.title,
@@ -240,9 +243,11 @@ router.put('/archive/:id', async (req, res) => {
       });
 
       await archivedBook.save();
+      console.log("✅ Archived book saved:", archivedBook._id);
 
       // Delete from regular books
       await Book.findByIdAndDelete(req.params.id);
+      console.log("✅ Original book deleted from Books collection");
 
       res.status(200).json({
         message: 'Book archived successfully',
@@ -260,8 +265,8 @@ router.put('/archive/:id', async (req, res) => {
     }
 
   } catch (err) {
-    console.error("Error archiving book:", err);
-    res.status(500).json({ error: 'Error archiving book' });
+    console.error("❌ Error archiving book:", err);
+    res.status(500).json({ error: 'Error archiving book: ' + err.message });
   }
 });
 
