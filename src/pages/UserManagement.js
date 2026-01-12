@@ -14,6 +14,7 @@ const UserManagement = () => {
   const [editError, setEditError] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [filterRole, setFilterRole] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [createForm, setCreateForm] = useState({
     firstName: "",
     lastName: "",
@@ -334,6 +335,25 @@ const UserManagement = () => {
 
             {error && <div className="um-error">{error}</div>}
 
+            {/* Search Bar */}
+            <div style={{ marginBottom: '20px' }}>
+              <input
+                type="text"
+                placeholder="Search by name, email, or contact number..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px',
+                  borderRadius: '5px',
+                  border: '2px solid #ddd',
+                  fontSize: '14px',
+                  boxSizing: 'border-box',
+                  transition: 'border-color 0.3s'
+                }}
+              />
+            </div>
+
             {/* Filter Buttons */}
             <div className="um-filter-buttons" style={{ marginBottom: '20px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               <button 
@@ -417,6 +437,17 @@ const UserManagement = () => {
                   <tbody>
                     {users
                       .filter(user => filterRole === 'all' || user.role === filterRole)
+                      .filter(user => {
+                        const searchLower = searchQuery.toLowerCase();
+                        const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
+                        const email = user.email.toLowerCase();
+                        const contact = user.contactNumber.toLowerCase();
+                        return (
+                          fullName.includes(searchLower) ||
+                          email.includes(searchLower) ||
+                          contact.includes(searchLower)
+                        );
+                      })
                       .map((user, idx) => (
                       <tr 
                         key={idx} 
