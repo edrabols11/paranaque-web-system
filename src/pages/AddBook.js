@@ -68,11 +68,6 @@ const AddBook = ({ onBookAdded }) => {
     setBook({ ...book, [name]: value });
   };
 
-  const generateCallNumber = () => {
-    if (!book.category || !book.accessionNumber) return "";
-    return `${book.category.substring(0, 3).toUpperCase()}-${book.accessionNumber}`;
-  };
-
   const handleAddCategory = () => {
     if (newCategory.trim()) {
       if (!categories.includes(newCategory.trim())) {
@@ -100,7 +95,7 @@ const AddBook = ({ onBookAdded }) => {
     const payload = {
       ...book,
       stock: parseInt(book.stock) || 1,
-      callNumber: generateCallNumber(),
+      callNumber: book.callNumber,
       location: {
         genreCode: book.category.slice(0, 3).toUpperCase(),
         shelf: parseInt(book.location.shelf),
@@ -137,7 +132,6 @@ const AddBook = ({ onBookAdded }) => {
           location: { shelf: "", level: "" },
           author: "",
           publisher: "",
-          accessionNumber: "",
           callNumber: "",
           image: null
         });
@@ -166,9 +160,7 @@ const AddBook = ({ onBookAdded }) => {
 
         <Input label="Book Title" name="title" value={book.title} onChange={handleChange} required />
 
-        <Input label="Accession No. (Book ID)" name="accessionNumber" value={book.accessionNumber} onChange={handleChange} required />
-
-        <Input label="Call Number (Auto-generated)" value={generateCallNumber()} disabled />
+        <Input label="Call Number (Optional)" name="callNumber" value={book.callNumber} onChange={handleChange} placeholder="e.g., FIC-ALI or leave blank" />
 
         <Input label="Author" name="author" value={book.author} onChange={handleChange} required />
 

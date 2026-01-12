@@ -387,30 +387,32 @@ const BooksTable = () => {
                 </div>
 
                 <div style={{ marginBottom: '15px' }}>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Accession Number</label>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Accession Number (Auto-Generated)</label>
                   <input
                     type="text"
                     name="accessionNumber"
                     value={editForm.accessionNumber}
-                    onChange={handleEditChange}
+                    disabled
                     style={{
                       width: '100%',
                       padding: '10px',
                       border: '1px solid #ddd',
                       borderRadius: '4px',
                       boxSizing: 'border-box',
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      backgroundColor: '#f5f5f5'
                     }}
                   />
                 </div>
 
                 <div style={{ marginBottom: '15px' }}>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Call Number (Auto-Generated)</label>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Call Number (Optional)</label>
                   <input
                     type="text"
                     name="callNumber"
                     value={editForm.callNumber}
-                    disabled
+                    onChange={handleEditChange}
+                    placeholder="e.g., FIC-ALI"
                     style={{
                       width: '100%',
                       padding: '10px',

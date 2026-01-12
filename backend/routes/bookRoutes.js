@@ -7,9 +7,26 @@ const ArchivedBook = require('../models/ArchivedBook');
 const Transaction = require('../models/Transaction');
 const Log = require('../models/Log');
 const ReservedBook = require('../models/ReservedBook');
+const Counter = require('../models/Counter');
 const { uploadBase64ToSupabase, getFullImageUrl } = require('../utils/upload');
 
 const router = express.Router();
+
+// Function to get next accession number
+const getNextAccessionNumber = async () => {
+  try {
+    const counter = await Counter.findByIdAndUpdate(
+      { name: 'accessionNumber' },
+      { $inc: { value: 1 } },
+      { new: true, upsert: true }
+    );
+    // Format as 6-digit zero-padded number (e.g., 000123)
+    return String(counter.value).padStart(6, '0');
+  } catch (err) {
+    console.error('Error getting next accession number:', err);
+    throw err;
+  }
+};
 
 // Multer storage setup
 const storage = multer.diskStorage({
@@ -28,7 +45,7 @@ const upload = multer({ storage });
 router.post('/', async (req, res) => {
   try {
     console.log("post /api/books: ", req.body);
-    const { title, year, image, userEmail, location, author, publisher, accessionNumber, callNumber, category, stock } = req.body;
+    const { title, year, image, userEmail, location, author, publisher, callNumber, category, stock } = req.body;
     let imageField = null;
 
     // If image is a base64 string, store it directly
@@ -59,6 +76,9 @@ router.post('/', async (req, res) => {
       }
     }
 
+    // Auto-generate accession number
+    const generatedAccessionNumber = await getNextAccessionNumber();
+
     const newBook = new Book({
       title,
       year,
@@ -68,7 +88,7 @@ router.post('/', async (req, res) => {
       location,
       author,
       publisher,
-      accessionNumber,
+      accessionNumber: generatedAccessionNumber,
       callNumber,
       category,
       stock: parseInt(stock) || 1,
