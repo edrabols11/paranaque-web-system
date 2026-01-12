@@ -9,6 +9,8 @@ const BooksTable = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddBookModal, setShowAddBookModal] = useState(false);
+  const [editingBook, setEditingBook] = useState(null);
+  const [editForm, setEditForm] = useState({});
 
   useEffect(() => {
     fetchReservedBooks();
@@ -88,6 +90,56 @@ const BooksTable = () => {
         console.error(err);
       }
     }
+  };
+
+  const startEdit = (book) => {
+    setEditingBook(book._id);
+    setEditForm({
+      title: book.title,
+      author: book.author || '',
+      publisher: book.publisher || '',
+      year: book.year,
+      stock: book.stock,
+      category: book.category || '',
+      accessionNumber: book.accessionNumber || '',
+      callNumber: book.callNumber || '',
+      status: book.status || 'Available'
+    });
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditForm(prev => ({
+      ...prev,
+      [name]: name === 'year' || name === 'stock' ? parseInt(value) : value
+    }));
+  };
+
+  const saveEdit = async () => {
+    try {
+      const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/books/${editingBook}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm)
+      });
+      if (res.ok) {
+        const updatedBooks = books.map(book =>
+          book._id === editingBook ? { ...book, ...editForm } : book
+        );
+        setBooks(updatedBooks);
+        setEditingBook(null);
+        alert('Book updated successfully!');
+      } else {
+        alert('Failed to update book');
+      }
+    } catch (err) {
+      alert('Error updating book: ' + err.message);
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingBook(null);
+    setEditForm({});
   };
 
   return (
@@ -186,7 +238,8 @@ const BooksTable = () => {
                   <td>
                     {book.status ? book.status : "Available"}
                   </td>
-                  <td>
+                  <td style={{ display: 'flex', gap: '5px' }}>
+                    <button onClick={() => startEdit(book)} className="um-btn um-edit" style={{ paddingTop: "10px", paddingBottom: "10px", backgroundColor: '#4CAF50' }}>✏️ Edit</button>
                     <button onClick={() => archiveBook(book._id)} className="um-btn um-edit" style={{ paddingTop: "10px", paddingBottom: "10px", backgroundColor: '#dab43bff' }}>Archive</button>
                   </td>
                 </tr>
@@ -206,6 +259,220 @@ const BooksTable = () => {
                   ×
                 </button>
                 <AddBook onBookAdded={() => { setShowAddBookModal(false); }} />
+              </div>
+            </div>
+          )}
+
+          {/* Edit Book Modal */}
+          {editingBook && (
+            <div className="modal-overlay" onClick={cancelEdit}>
+              <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 600, width: '95%', height: '90%', padding: '20px', background: '#fff', borderRadius: '10px', position: 'relative', overflowY: 'auto' }}>
+                <button
+                  onClick={cancelEdit}
+                  style={{ position: 'absolute', top: 10, right: 16, background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+                <h2 style={{ marginTop: 0 }}>Edit Book Details</h2>
+
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Title</label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={editForm.title}
+                    onChange={handleEditChange}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      boxSizing: 'border-box',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Author</label>
+                  <input
+                    type="text"
+                    name="author"
+                    value={editForm.author}
+                    onChange={handleEditChange}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      boxSizing: 'border-box',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Publisher</label>
+                  <input
+                    type="text"
+                    name="publisher"
+                    value={editForm.publisher}
+                    onChange={handleEditChange}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      boxSizing: 'border-box',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Year</label>
+                    <input
+                      type="number"
+                      name="year"
+                      value={editForm.year}
+                      onChange={handleEditChange}
+                      style={{
+                        width: '100%',
+                        padding: '10px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        boxSizing: 'border-box',
+                        fontSize: '14px'
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Stock</label>
+                    <input
+                      type="number"
+                      name="stock"
+                      value={editForm.stock}
+                      onChange={handleEditChange}
+                      style={{
+                        width: '100%',
+                        padding: '10px',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        boxSizing: 'border-box',
+                        fontSize: '14px'
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Category</label>
+                  <input
+                    type="text"
+                    name="category"
+                    value={editForm.category}
+                    onChange={handleEditChange}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      boxSizing: 'border-box',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Accession Number</label>
+                  <input
+                    type="text"
+                    name="accessionNumber"
+                    value={editForm.accessionNumber}
+                    onChange={handleEditChange}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      boxSizing: 'border-box',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Call Number</label>
+                  <input
+                    type="text"
+                    name="callNumber"
+                    value={editForm.callNumber}
+                    onChange={handleEditChange}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      boxSizing: 'border-box',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Status</label>
+                  <select
+                    name="status"
+                    value={editForm.status}
+                    onChange={handleEditChange}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      borderRadius: '4px',
+                      boxSizing: 'border-box',
+                      fontSize: '14px'
+                    }}
+                  >
+                    <option value="Available">Available</option>
+                    <option value="Archived">Archived</option>
+                    <option value="Damaged">Damaged</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                  <button
+                    onClick={cancelEdit}
+                    style={{
+                      backgroundColor: '#757575',
+                      color: 'white',
+                      border: 'none',
+                      padding: '10px 20px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={saveEdit}
+                    style={{
+                      backgroundColor: '#4CAF50',
+                      color: 'white',
+                      border: 'none',
+                      padding: '10px 20px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    Save Changes
+                  </button>
+                </div>
               </div>
             </div>
           )}
