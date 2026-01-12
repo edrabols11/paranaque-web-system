@@ -405,19 +405,22 @@ const BooksTable = () => {
                 </div>
 
                 <div style={{ marginBottom: '15px' }}>
-                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Call Number</label>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Call Number (Auto-Generated)</label>
                   <input
                     type="text"
                     name="callNumber"
                     value={editForm.callNumber}
-                    onChange={handleEditChange}
+                    disabled
                     style={{
                       width: '100%',
                       padding: '10px',
                       border: '1px solid #ddd',
                       borderRadius: '4px',
                       boxSizing: 'border-box',
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      backgroundColor: '#f5f5f5',
+                      color: '#999',
+                      cursor: 'not-allowed'
                     }}
                   />
                 </div>
