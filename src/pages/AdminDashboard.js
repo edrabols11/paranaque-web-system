@@ -101,14 +101,11 @@ const AdminDashboard = () => {
     "Borrowed Books",
     "Reserved Books",
     "Pending Requests",
-    "Return Requests",
     "Transactions"
   ];
 
   const handleResourceClick = (option) => {
-    if (option === "Return Requests") {
-      navigate("/admin/return-requests");
-    } else if (option === "Add Book") {
+    if (option === "Add Book") {
       setShowAddBookModal(true);
     } else if (option === "Archive Books") {
       navigate("/admin/archived-books");
