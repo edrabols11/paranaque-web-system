@@ -197,7 +197,8 @@ const PendingRequestTable = () => {
         alert('Reservation approved successfully');
         fetchPendingRequest();
       } else {
-        alert(data.message || 'Failed to approve reservation');
+        const errorMsg = data.details ? `${data.message} (${data.details})` : data.message;
+        alert(errorMsg || 'Failed to approve reservation');
       }
     } catch (err) {
       console.error('Error:', err);

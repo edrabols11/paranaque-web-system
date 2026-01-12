@@ -292,8 +292,17 @@ router.post('/approve-reservation/:id', async (req, res) => {
       return res.status(404).json({ message: 'Reservation not found' });
     }
 
+    console.log('Transaction details:', { 
+      type: transaction.type, 
+      status: transaction.status,
+      id: transaction._id 
+    });
+
     if (transaction.type !== 'reserve' || transaction.status !== 'pending') {
-      return res.status(400).json({ message: 'Invalid transaction for approval' });
+      return res.status(400).json({ 
+        message: 'Invalid transaction for approval',
+        details: `Transaction type: ${transaction.type}, status: ${transaction.status}`
+      });
     }
 
     // Check if book is still available
