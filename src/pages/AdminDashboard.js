@@ -109,6 +109,16 @@ const AdminDashboard = () => {
       setShowAddBookModal(true);
     } else if (option === "Archive Books") {
       navigate("/admin/archived-books");
+    } else if (option === "All Books") {
+      setSelectedSubResource("All Books");
+    } else if (option === "Borrowed Books") {
+      setSelectedSubResource("Borrowed Books");
+    } else if (option === "Reserved Books") {
+      setSelectedSubResource("Reserved Books");
+    } else if (option === "Pending Requests") {
+      setSelectedSubResource("Pending Requests");
+    } else if (option === "Transactions") {
+      setSelectedSubResource("Transactions");
     }
   };
 
