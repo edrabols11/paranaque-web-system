@@ -187,7 +187,15 @@ const UserHome = () => {
       if (res.ok) {
         await Swal.fire({
           title: "Parañaledge",
-          text: "Book reserved successfully! Pending admin approval.",
+          html: `<div style="text-align: left;">
+            <p><strong>✓ Book Reserved Successfully!</strong></p>
+            <p><strong>Book:</strong> ${selectedBook.title}</p>
+            <p><strong>Status:</strong> Pending Admin Approval</p>
+            <p style="font-size: 12px; color: #666; margin-top: 10px;">
+              An email notification has been sent to <strong>${userEmail}</strong>. 
+              The librarian will review your request and notify you once it's approved.
+            </p>
+          </div>`,
           icon: "success",
           confirmButtonText: "OK"
         });
@@ -197,7 +205,7 @@ const UserHome = () => {
       } else {
         await Swal.fire({
           title: "Parañaledge",
-          text: data.error || "Error reserving book",
+          text: data.error || data.message || "Error reserving book",
           icon: "error",
           confirmButtonText: "OK"
         });
