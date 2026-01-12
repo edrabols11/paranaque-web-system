@@ -13,6 +13,7 @@ const UserManagement = () => {
   const [editForm, setEditForm] = useState({});
   const [editError, setEditError] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [filterRole, setFilterRole] = useState('all');
   const [createForm, setCreateForm] = useState({
     firstName: "",
     lastName: "",
@@ -333,6 +334,70 @@ const UserManagement = () => {
 
             {error && <div className="um-error">{error}</div>}
 
+            {/* Filter Buttons */}
+            <div className="um-filter-buttons" style={{ marginBottom: '20px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <button 
+                className={`um-filter-btn ${filterRole === 'all' ? 'active' : ''}`}
+                onClick={() => setFilterRole('all')}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '5px',
+                  border: `2px solid ${filterRole === 'all' ? '#4CAF50' : '#ddd'}`,
+                  backgroundColor: filterRole === 'all' ? '#4CAF50' : 'white',
+                  color: filterRole === 'all' ? 'white' : '#333',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                All Users ({users.length})
+              </button>
+              <button 
+                className={`um-filter-btn ${filterRole === 'user' ? 'active' : ''}`}
+                onClick={() => setFilterRole('user')}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '5px',
+                  border: `2px solid ${filterRole === 'user' ? '#2196F3' : '#ddd'}`,
+                  backgroundColor: filterRole === 'user' ? '#2196F3' : 'white',
+                  color: filterRole === 'user' ? 'white' : '#333',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                Regular Users ({users.filter(u => u.role === 'user').length})
+              </button>
+              <button 
+                className={`um-filter-btn ${filterRole === 'librarian' ? 'active' : ''}`}
+                onClick={() => setFilterRole('librarian')}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '5px',
+                  border: `2px solid ${filterRole === 'librarian' ? '#FF9800' : '#ddd'}`,
+                  backgroundColor: filterRole === 'librarian' ? '#FF9800' : 'white',
+                  color: filterRole === 'librarian' ? 'white' : '#333',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                Librarians ({users.filter(u => u.role === 'librarian').length})
+              </button>
+              <button 
+                className={`um-filter-btn ${filterRole === 'admin' ? 'active' : ''}`}
+                onClick={() => setFilterRole('admin')}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '5px',
+                  border: `2px solid ${filterRole === 'admin' ? '#F44336' : '#ddd'}`,
+                  backgroundColor: filterRole === 'admin' ? '#F44336' : 'white',
+                  color: filterRole === 'admin' ? 'white' : '#333',
+                  cursor: 'pointer',
+                  fontWeight: 'bold'
+                }}
+              >
+                Admins ({users.filter(u => u.role === 'admin').length})
+              </button>
+            </div>
+
             {users.length === 0 ? (
               <p className="um-empty">No users found.</p>
             ) : (
@@ -350,8 +415,21 @@ const UserManagement = () => {
                   </thead>
 
                   <tbody>
-                    {users.map((user, idx) => (
-                      <tr key={idx} className="um-row">
+                    {users
+                      .filter(user => filterRole === 'all' || user.role === filterRole)
+                      .map((user, idx) => (
+                      <tr 
+                        key={idx} 
+                        className={`um-row um-row-${user.role}`}
+                        style={{
+                          borderLeft: user.role === 'admin' ? '4px solid #F44336' : 
+                                      user.role === 'librarian' ? '4px solid #FF9800' : 
+                                      '4px solid #2196F3',
+                          backgroundColor: user.role === 'admin' ? '#FFEBEE' : 
+                                          user.role === 'librarian' ? '#FFF3E0' : 
+                                          'transparent'
+                        }}
+                      >
                         <td>{user.firstName} {user.lastName}</td>
                         <td>{user.email}</td>
                         <td>{user.contactNumber}</td>
@@ -364,6 +442,12 @@ const UserManagement = () => {
                             value={editForm.role}
                             onChange={(e) => handleChangeUserRole(e, user._id)}
                             defaultValue={user.role}
+                            style={{
+                              fontWeight: 'bold',
+                              color: user.role === 'admin' ? '#F44336' : 
+                                     user.role === 'librarian' ? '#FF9800' : 
+                                     '#2196F3'
+                            }}
                           >
                             <option value="user">User</option>
                             <option value="admin">Admin</option>
