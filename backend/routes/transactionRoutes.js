@@ -115,21 +115,30 @@ router.post('/reserve', async (req, res) => {
       endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days for admin to approve
       bookTitle: book.title
     });
+    
+    // Save transaction and log immediately
     await Promise.all([
       transaction.save(),
       new Log({
         userEmail,
         action: `Reservation requested for book: ${book.title}`
-      }).save(),
-      sendReservationPendingEmail(userEmail, book.title),
-      PendingReservedBook.create({
-        bookId: book._id,
-        userEmail,
-        bookTitle: book.title,
-        reservedAt: new Date(),
-        transactionId: transaction._id
-      })
+      }).save()
     ]);
+
+    // Send email and create pending reserved book in the background (non-blocking)
+    sendReservationPendingEmail(userEmail, book.title).catch(err => {
+      console.error('Error sending reservation email:', err);
+    });
+    
+    PendingReservedBook.create({
+      bookId: book._id,
+      userEmail,
+      bookTitle: book.title,
+      reservedAt: new Date(),
+      transactionId: transaction._id
+    }).catch(err => {
+      console.error('Error creating pending reserved book:', err);
+    });
 
     res.status(201).json({ message: 'Book reserved successfully', transaction });
   } catch (err) {

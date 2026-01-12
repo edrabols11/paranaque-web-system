@@ -178,11 +178,18 @@ const UserHome = () => {
     }
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
       const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/reserve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bookId: selectedBook._id, userEmail }),
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
+      
       const data = await res.json();
       if (res.ok) {
         await Swal.fire({
@@ -211,10 +218,15 @@ const UserHome = () => {
         });
       }
     } catch (err) {
+      clearTimeout(timeoutId);
       console.error(err);
+      let errorMessage = "Network error while reserving book.";
+      if (err.name === 'AbortError') {
+        errorMessage = "Request timeout. The server took too long to respond. Please check your internet connection and try again.";
+      }
       await Swal.fire({
         title: "Parañaledge",
-        text: "Network error while reserving book.",
+        text: errorMessage,
         icon: "error",
         confirmButtonText: "OK"
       });
