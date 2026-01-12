@@ -14,17 +14,28 @@ const router = express.Router();
 // Function to get next accession number (using a simple sequential approach)
 const getNextAccessionNumber = async () => {
   try {
+    console.log("🔢 Starting accession number generation...");
+    
     // Count total books to generate next sequence number
     const totalBooks = await Book.countDocuments({});
+    console.log("📊 Total books in database:", totalBooks);
+    
     const nextNumber = totalBooks + 1;
+    console.log("📈 Next number calculated:", nextNumber);
     
     // Format as 6-digit zero-padded number (e.g., 000001, 000002, etc.)
     const formattedNumber = String(nextNumber).padStart(6, '0');
-    console.log(`📈 Generated accession number: ${formattedNumber} (Book #${nextNumber})`);
+    console.log(`✅ Generated accession number: ${formattedNumber}`);
+    
     return formattedNumber;
   } catch (err) {
-    console.error('❌ Error generating accession number:', err);
-    throw err;
+    console.error('❌ Error in getNextAccessionNumber:', err.message);
+    console.error('❌ Stack:', err.stack);
+    
+    // Fallback: use timestamp-based number if counting fails
+    const fallback = String(Date.now()).slice(-6);
+    console.log('⚠️  Using fallback accession number:', fallback);
+    return fallback;
   }
 };
 
@@ -44,7 +55,8 @@ const upload = multer({ storage });
 // Accepts either multipart/form-data (with file) or JSON (with base64 image)
 router.post('/', async (req, res) => {
   try {
-    console.log("post /api/books: ", req.body);
+    console.log("🔵 POST /api/books called");
+    console.log("📝 Request body:", req.body);
     const { title, year, image, userEmail, location, author, publisher, callNumber, category, stock } = req.body;
     let imageField = null;
 
@@ -110,7 +122,6 @@ router.post('/', async (req, res) => {
   } catch (err) {
     console.error("❌ Error adding book:", err);
     res.status(500).json({ error: 'Server error while adding book: ' + err.message });
-    res.status(500).json({ error: 'Server error while adding book' });
   }
 });
 
