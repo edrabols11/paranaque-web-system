@@ -218,7 +218,6 @@ const UserHome = () => {
         });
       }
     } catch (err) {
-      clearTimeout(timeoutId);
       console.error(err);
       let errorMessage = "Network error while reserving book.";
       if (err.name === 'AbortError') {
