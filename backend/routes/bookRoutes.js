@@ -15,12 +15,12 @@ const router = express.Router();
 // Function to get next accession number
 const getNextAccessionNumber = async () => {
   try {
-    const counter = await Counter.findByIdAndUpdate(
+    const counter = await Counter.findOneAndUpdate(
       { name: 'accessionNumber' },
       { $inc: { value: 1 } },
       { new: true, upsert: true }
     );
-    // Format as 6-digit zero-padded number (e.g., 000123)
+    // Format as 6-digit zero-padded number (e.g., 000001, 000002, etc.)
     return String(counter.value).padStart(6, '0');
   } catch (err) {
     console.error('Error getting next accession number:', err);
