@@ -7,35 +7,23 @@ const ArchivedBook = require('../models/ArchivedBook');
 const Transaction = require('../models/Transaction');
 const Log = require('../models/Log');
 const ReservedBook = require('../models/ReservedBook');
-const Counter = require('../models/Counter');
 const { uploadBase64ToSupabase, getFullImageUrl } = require('../utils/upload');
 
 const router = express.Router();
 
-// Function to get next accession number
+// Function to get next accession number (using a simple sequential approach)
 const getNextAccessionNumber = async () => {
   try {
-    // Find or create the counter
-    let counter = await Counter.findOne({ name: 'accessionNumber' });
-    
-    if (!counter) {
-      // Create counter if it doesn't exist
-      counter = await Counter.create({ name: 'accessionNumber', value: 0 });
-      console.log("📊 Created new accession number counter");
-    }
-    
-    // Increment the counter
-    counter.value += 1;
-    await counter.save();
-    
-    console.log("📈 Accession number counter incremented to:", counter.value);
+    // Count total books to generate next sequence number
+    const totalBooks = await Book.countDocuments({});
+    const nextNumber = totalBooks + 1;
     
     // Format as 6-digit zero-padded number (e.g., 000001, 000002, etc.)
-    const formattedNumber = String(counter.value).padStart(6, '0');
-    console.log("✅ Generated accession number:", formattedNumber);
+    const formattedNumber = String(nextNumber).padStart(6, '0');
+    console.log(`📈 Generated accession number: ${formattedNumber} (Book #${nextNumber})`);
     return formattedNumber;
   } catch (err) {
-    console.error('❌ Error getting next accession number:', err);
+    console.error('❌ Error generating accession number:', err);
     throw err;
   }
 };
@@ -994,44 +982,9 @@ router.get('/diagnostic/images', async (req, res) => {
   }
 });
 
-// Admin endpoint to reset accession number counter
-router.post('/admin/reset-counter', async (req, res) => {
-  try {
-    // Get the highest accession number currently in database
-    const books = await Book.find({ accessionNumber: { $regex: /^\d{6}$/ } }).sort({ createdAt: -1 }).limit(1);
-    
-    let newCounterValue = 0;
-    if (books.length > 0) {
-      const lastAccession = parseInt(books[0].accessionNumber);
-      newCounterValue = lastAccession;
-    }
-    
-    // Reset or create counter
-    await Counter.deleteOne({ name: 'accessionNumber' });
-    const counter = await Counter.create({ 
-      name: 'accessionNumber', 
-      value: newCounterValue 
-    });
-    
-    console.log("🔄 Counter reset to:", newCounterValue);
-    
-    res.json({
-      message: 'Counter reset successfully',
-      newValue: newCounterValue,
-      counter
-    });
-  } catch (err) {
-    console.error('❌ Error resetting counter:', err);
-    res.status(500).json({ error: 'Failed to reset counter: ' + err.message });
-  }
-});
-
 // Admin endpoint to fix accession numbers for existing books
 router.post('/admin/fix-accession-numbers', async (req, res) => {
   try {
-    // Delete counter to start fresh
-    await Counter.deleteOne({ name: 'accessionNumber' });
-    
     // Get all books, sorted by creation date
     const books = await Book.find({}).sort({ createdAt: 1 });
     
@@ -1049,9 +1002,6 @@ router.post('/admin/fix-accession-numbers', async (req, res) => {
     }
     
     await Promise.all(updatePromises);
-    
-    // Create new counter with final value
-    await Counter.create({ name: 'accessionNumber', value: counter });
     
     console.log("✅ Fixed accession numbers for", counter, "books");
     
