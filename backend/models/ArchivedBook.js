@@ -11,7 +11,7 @@ const archivedBookSchema = new mongoose.Schema({
     type: Number, 
     required: true,
     min: 1000,
-    max: new Date().getFullYear() + 10
+    max: new Date().getFullYear() + 50 // Allow some future dates
   },
   genre: { 
     type: String, 

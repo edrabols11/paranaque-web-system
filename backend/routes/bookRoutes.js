@@ -293,115 +293,119 @@ router.put('/archive/:id', async (req, res) => {
     const bookId = req.params.id;
     console.log("🔍 Looking for book with ID:", bookId);
     
+    // Find the book
     const book = await Book.findById(bookId);
-    console.log("📚 Book found:", book ? `${book.title} (${book._id})` : 'NOT FOUND');
+    console.log("📚 Book found:", book ? `${book.title}` : 'NOT FOUND');
 
     if (!book) {
-      console.log("❌ Book not found with ID:", bookId);
       return res.status(404).json({ error: 'Book not found' });
     }
 
-    // If archiving the book
-    if (req.body.status === 'Archived') {
-      console.log("🗂️  Archiving book:", book.title);
-      
-      try {
-        // Create archived book record
-        // ⚠️ Ensure proper type conversion for validation
-        const genreValue = book.category || book.genre || 'Unknown';
-        const yearValue = book.year ? parseInt(book.year) : new Date().getFullYear();
-        
-        console.log("📋 Creating archived book:");
-        console.log("  - Title:", book.title);
-        console.log("  - Year:", yearValue, "(type:", typeof yearValue + ")");
-        console.log("  - Genre:", genreValue);
-        
-        const archivedBook = new ArchivedBook({
-          title: book.title,
-          year: yearValue, // Ensure it's a number
-          author: book.author || 'Unknown',
-          publisher: book.publisher || '',
-          category: book.category || '',
-          genre: genreValue,
-          image: book.image || null,
-          accessionNumber: book.accessionNumber || '',
-          callNumber: book.callNumber || '',
-          location: book.location || {},
-          status: 'Archived',
-          archivedAt: new Date(),
-          originalBookId: book._id
-        });
-
-        console.log("💾 Saving archived book record...");
-        await archivedBook.save();
-        console.log("✅ Archived book saved:", archivedBook._id);
-
-        // Delete from regular books
-        console.log("🗑️ Deleting original book from Books collection...");
-        const deletedBook = await Book.findByIdAndDelete(bookId);
-        console.log("✅ Original book deleted:", deletedBook ? deletedBook.title : 'Book not found for deletion');
-
-        // Log the archive action
-        try {
-          await new Log({
-            userEmail: req.body.userEmail || 'admin',
-            action: `Archived book: ${book.title} (Accession: ${book.accessionNumber})`
-          }).save();
-          console.log("📝 Archive logged");
-        } catch (logErr) {
-          console.warn("⚠️ Warning: Failed to log archive action:", logErr.message);
-          // Don't fail the archive if logging fails
-        }
-
-        res.status(200).json({
-          message: 'Book archived successfully',
-          book: archivedBook,
-        });
-      } catch (saveErr) {
-        console.error("❌ Error saving archived book:", saveErr.message);
-        console.error("❌ Full error object:", saveErr);
-        if (saveErr.errors) {
-          console.error("❌ Validation errors:", Object.keys(saveErr.errors).map(k => 
-            `${k}: ${saveErr.errors[k].message}`
-          ).join('; '));
-        }
-        throw saveErr;
-      }
-    } else {
-      // Regular status update (not archiving)
-      console.log("📝 Updating book status to:", req.body.status);
+    // Only handle archive status
+    if (req.body.status !== 'Archived') {
+      // Regular status update
       book.status = req.body.status;
       await book.save();
-
-      res.status(200).json({
+      return res.status(200).json({
         message: 'Book status updated successfully',
         updatedBook: book,
       });
     }
 
-  } catch (err) {
-    console.error("❌ Error in archive route:", err);
-    console.error("❌ Error details:", {
-      message: err.message,
-      stack: err.stack,
-      mongooseError: err.errors ? Object.keys(err.errors) : 'none'
-    });
+    // ARCHIVE LOGIC
+    console.log("🗂️ Archiving book:", book.title);
     
-    // Extract validation errors if any
-    let errorMsg = err.message;
+    // Prepare data for archiving
+    const genreValue = book.category || book.genre || 'Unknown';
+    let yearValue = book.year;
+    
+    // Validate year
+    if (!yearValue || isNaN(yearValue)) {
+      console.warn("⚠️ Invalid year value, using current year");
+      yearValue = new Date().getFullYear();
+    } else {
+      yearValue = parseInt(yearValue);
+      // Ensure year is within valid range
+      if (yearValue < 1000) yearValue = 1000;
+      if (yearValue > new Date().getFullYear() + 50) yearValue = new Date().getFullYear();
+    }
+    
+    console.log("📋 Archive data:");
+    console.log("  - Title:", book.title);
+    console.log("  - Year:", yearValue);
+    console.log("  - Genre:", genreValue);
+    
+    // Create archived book
+    const archivedBook = new ArchivedBook({
+      title: book.title,
+      year: yearValue,
+      author: book.author || 'Unknown',
+      publisher: book.publisher || '',
+      category: book.category || '',
+      genre: genreValue,
+      image: book.image || null,
+      accessionNumber: book.accessionNumber || '',
+      callNumber: book.callNumber || '',
+      location: book.location || {},
+      status: 'Archived',
+      archivedAt: new Date(),
+      originalBookId: book._id
+    });
+
+    // Validate before saving
+    console.log("🔍 Validating archived book object...");
+    const validationError = archivedBook.validateSync();
+    if (validationError) {
+      console.error("❌ Validation failed:", validationError.errors);
+      const errors = Object.keys(validationError.errors).map(k => 
+        `${k}: ${validationError.errors[k].message}`
+      ).join('; ');
+      return res.status(400).json({ error: `Validation failed: ${errors}` });
+    }
+
+    console.log("💾 Saving archived book...");
+    await archivedBook.save();
+    console.log("✅ Archived book saved:", archivedBook._id);
+
+    // Delete original book
+    console.log("🗑️ Deleting original book...");
+    await Book.findByIdAndDelete(bookId);
+    console.log("✅ Original book deleted");
+
+    // Log the action (non-critical)
+    try {
+      await new Log({
+        userEmail: req.body.userEmail || 'admin',
+        action: `Archived book: ${book.title} (Accession: ${book.accessionNumber})`
+      }).save();
+    } catch (logErr) {
+      console.warn("⚠️ Log creation failed (non-critical):", logErr.message);
+    }
+
+    res.status(200).json({
+      message: 'Book archived successfully',
+      archivedBook: {
+        _id: archivedBook._id,
+        title: archivedBook.title,
+        accessionNumber: archivedBook.accessionNumber
+      }
+    });
+
+  } catch (err) {
+    console.error("❌ Archive route error:", err.message);
+    console.error("❌ Full error:", err);
+    
+    let errorMsg = err.message || 'Unknown error';
     if (err.errors) {
       const validationErrors = Object.keys(err.errors).map(field => 
         `${field}: ${err.errors[field].message}`
       ).join('; ');
-      errorMsg = `Validation failed: ${validationErrors}`;
+      errorMsg = `Validation error: ${validationErrors}`;
     }
     
     res.status(500).json({ 
       error: errorMsg,
-      details: process.env.NODE_ENV === 'development' ? {
-        type: err.constructor.name,
-        stack: err.stack
-      } : undefined
+      type: err.name
     });
   }
 });
