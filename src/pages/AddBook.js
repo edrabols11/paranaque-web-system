@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import logo from "../imgs/liblogo.png";
 
 const AddBook = ({ onBookAdded }) => {
@@ -7,6 +7,7 @@ const AddBook = ({ onBookAdded }) => {
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [newCategory, setNewCategory] = useState("");
   const [categories, setCategories] = useState(["Science", "Math", "Filipino", "English", "Fiction"]);
+  const [nextAccessionNumber, setNextAccessionNumber] = useState("Calculating...");
 
   const [book, setBook] = useState({
     title: "",
@@ -27,6 +28,49 @@ const AddBook = ({ onBookAdded }) => {
 
   const [preview, setPreview] = useState(null);
   const [base64Image, setBase64Image] = useState("");
+
+  // Fetch the next accession number when component mounts
+  useEffect(() => {
+    const fetchNextAccessionNumber = async () => {
+      try {
+        console.log("📚 Fetching next accession number...");
+        const response = await fetch("https://paranaledge-y7z1.onrender.com/api/books/?limit=1&sort=-createdAt");
+        const data = await response.json();
+        
+        if (data.books && data.books.length > 0) {
+          const lastBook = data.books[0];
+          const lastAccession = lastBook.accessionNumber || "2026-0000";
+          console.log("📚 Last accession number:", lastAccession);
+          
+          // Parse and increment
+          const parts = lastAccession.split('-');
+          const year = parseInt(parts[0]);
+          const sequence = parseInt(parts[1]);
+          const currentYear = new Date().getFullYear();
+          
+          let nextSequence;
+          if (year === currentYear) {
+            nextSequence = sequence + 1;
+          } else {
+            nextSequence = 1;
+          }
+          
+          const nextAccession = `${currentYear}-${String(nextSequence).padStart(4, '0')}`;
+          console.log("📚 Next accession number will be:", nextAccession);
+          setNextAccessionNumber(nextAccession);
+        } else {
+          // No books exist yet
+          const currentYear = new Date().getFullYear();
+          setNextAccessionNumber(`${currentYear}-0001`);
+        }
+      } catch (err) {
+        console.error("❌ Error fetching accession number:", err);
+        setNextAccessionNumber("Auto-generated");
+      }
+    };
+
+    fetchNextAccessionNumber();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
@@ -207,6 +251,18 @@ const AddBook = ({ onBookAdded }) => {
       <form onSubmit={handleSubmit} style={styles.form} aria-label="Add Book Form">
 
         <Input label="Book Title" name="title" value={book.title} onChange={handleChange} required />
+
+        <div style={styles.inputGroup}>
+          <label style={styles.label}>Accession Number (Auto-Generated)</label>
+          <input 
+            type="text" 
+            value={nextAccessionNumber} 
+            disabled 
+            style={{...styles.input, backgroundColor: '#f5f5f5', color: '#666', cursor: 'not-allowed'}}
+            aria-label="Auto-generated accession number"
+          />
+          <small style={{color: '#999', marginTop: '5px', display: 'block'}}>This book will automatically get this accession number</small>
+        </div>
 
         <Input label="Call Number (Optional)" name="callNumber" value={book.callNumber} onChange={handleChange} placeholder="e.g., FIC-ALI or leave blank" />
 
