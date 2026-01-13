@@ -155,13 +155,21 @@ const BooksTable = () => {
 
         <div className="search-container ">
           <input type="text" placeholder="Search analytics..." onChange={(e) => setSearchTerm(e.target.value)} />
-          <button onClick={() => setShowAddBookModal(true)} className="um-btn um-edit" style={{ paddingTop: "10px", paddingBottom: "10px" }} >
+          <button 
+            onClick={() => {
+              console.log("🔘 Add Books button clicked");
+              setShowAddBookModal(true);
+            }} 
+            className="um-btn um-edit" 
+            style={{ paddingTop: "10px", paddingBottom: "10px", cursor: "pointer", zIndex: 10 }} 
+            type="button"
+          >
             Add Books
           </button>
-          <button onClick={exportToExcel} className="um-btn um-edit" style={{ paddingTop: "10px", paddingBottom: "10px" }} title="Export to Excel">
+          <button onClick={exportToExcel} className="um-btn um-edit" style={{ paddingTop: "10px", paddingBottom: "10px" }} title="Export to Excel" type="button">
             📥 Export
           </button>
-          <button onClick={fetchReservedBooks} className="um-btn um-edit" style={{ paddingTop: "10px", paddingBottom: "10px" }} title="Refresh">
+          <button onClick={fetchReservedBooks} className="um-btn um-edit" style={{ paddingTop: "10px", paddingBottom: "10px" }} title="Refresh" type="button">
             🔄 Refresh
           </button>
         </div>
@@ -255,11 +263,19 @@ const BooksTable = () => {
 
           {/* Add Book Modal */}
           {showAddBookModal && (
-            <div className="modal-overlay" onClick={() => setShowAddBookModal(false)}>
-              <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 600, width: '95%', height: '90%', padding: '10px', background: '#fff', borderRadius: '10px', position: 'relative' }}>
+            <div 
+              className="modal-overlay" 
+              onClick={() => setShowAddBookModal(false)}
+              style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}
+            >
+              <div 
+                className="modal-content" 
+                onClick={e => e.stopPropagation()} 
+                style={{ maxWidth: 600, width: '95%', height: '90%', padding: '10px', background: '#fff', borderRadius: '10px', position: 'relative', zIndex: 1001, overflowY: 'auto' }}
+              >
                 <button
                   onClick={() => setShowAddBookModal(false)}
-                  style={{ position: 'absolute', top: 10, right: 16, background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}
+                  style={{ position: 'absolute', top: 10, right: 16, background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', zIndex: 1002 }}
                   aria-label="Close"
                 >
                   ×
