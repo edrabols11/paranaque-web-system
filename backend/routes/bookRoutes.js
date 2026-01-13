@@ -1474,3 +1474,5 @@ router.post('/admin/assign-accession-numbers', async (req, res) => {
   }
 });
 
+module.exports = router;
+
