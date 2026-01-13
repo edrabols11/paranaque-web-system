@@ -86,10 +86,10 @@ const BooksTable = () => {
           const updatedList = books.filter((book) => book._id !== bookId);
           setBooks(updatedList);
         } else {
-          console.error("❌ Archive failed:", data);
+          console.error("❌ Archive failed - Full response:", data);
           const errorMsg = data.error || data.message || 'Unknown error';
-          const details = data.details || '';
-          alert("Failed to archive book: " + errorMsg + (details ? "\n" + JSON.stringify(details) : ""));
+          const errorDetails = data.details ? `\nDetails: ${data.details}` : '';
+          alert(`Failed to archive book:\n${errorMsg}${errorDetails}`);
         }
       } catch (err) {
         console.error("❌ Error archiving book:", err);

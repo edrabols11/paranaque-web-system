@@ -331,9 +331,16 @@ router.put('/archive/:id', async (req, res) => {
     }
     
     console.log("📋 Archive data:");
-    console.log("  - Title:", book.title);
-    console.log("  - Year:", yearValue);
-    console.log("  - Genre:", genreValue);
+    console.log("  - Title:", book.title, "(type:", typeof book.title + ")");
+    console.log("  - Year:", yearValue, "(type:", typeof yearValue + ")");
+    console.log("  - Genre:", genreValue, "(type:", typeof genreValue + ")");
+    console.log("  - Author:", book.author || 'Unknown');
+    console.log("  - Publisher:", book.publisher || '');
+    console.log("  - Category:", book.category || '');
+    console.log("  - Image:", book.image || null);
+    console.log("  - Accession:", book.accessionNumber || '');
+    console.log("  - CallNumber:", book.callNumber || '');
+    console.log("  - Location:", book.location);
     
     // Create archived book
     const archivedBook = new ArchivedBook({
@@ -354,6 +361,13 @@ router.put('/archive/:id', async (req, res) => {
 
     // Validate before saving
     console.log("🔍 Validating archived book object...");
+    console.log("🔍 ArchivedBook data before validation:", {
+      title: archivedBook.title,
+      year: archivedBook.year,
+      genre: archivedBook.genre,
+      author: archivedBook.author
+    });
+    
     const validationError = archivedBook.validateSync();
     if (validationError) {
       console.error("❌ Validation failed:", validationError.errors);
@@ -393,19 +407,36 @@ router.put('/archive/:id', async (req, res) => {
 
   } catch (err) {
     console.error("❌ Archive route error:", err.message);
-    console.error("❌ Full error:", err);
+    console.error("❌ Full error object:", err);
+    console.error("❌ Error name:", err.name);
     
+    // Detailed logging for different error types
+    if (err.errors) {
+      console.error("❌ Mongoose validation errors:");
+      Object.keys(err.errors).forEach(field => {
+        console.error(`  - ${field}: ${err.errors[field].message}`);
+      });
+    }
+    
+    if (err.stack) {
+      console.error("❌ Stack trace:", err.stack);
+    }
+    
+    // Build detailed error message
     let errorMsg = err.message || 'Unknown error';
     if (err.errors) {
       const validationErrors = Object.keys(err.errors).map(field => 
         `${field}: ${err.errors[field].message}`
       ).join('; ');
-      errorMsg = `Validation error: ${validationErrors}`;
+      errorMsg = validationErrors;
     }
+    
+    console.error("❌ Final error message:", errorMsg);
     
     res.status(500).json({ 
       error: errorMsg,
-      type: err.name
+      type: err.name,
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
   }
 });
