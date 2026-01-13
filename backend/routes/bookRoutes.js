@@ -472,6 +472,47 @@ router.put('/archive/:id', async (req, res) => {
 });
 
 
+// Admin endpoint to cleanup orphaned transactions and reservations
+router.post('/admin/cleanup-orphaned', async (req, res) => {
+  try {
+    console.log("🧹 Starting cleanup of orphaned references...");
+    
+    let deletedCount = 0;
+    
+    // Delete transactions referencing non-existent books
+    const allTransactions = await Transaction.find({});
+    for (const transaction of allTransactions) {
+      const book = await Book.findById(transaction.bookId);
+      if (!book) {
+        await Transaction.findByIdAndDelete(transaction._id);
+        deletedCount++;
+        console.log(`🗑️ Deleted orphaned transaction for book ${transaction.bookId}`);
+      }
+    }
+    
+    // Delete reserved books referencing non-existent books
+    const allReserved = await ReservedBook.find({});
+    for (const reserved of allReserved) {
+      const book = await Book.findById(reserved.bookId);
+      if (!book) {
+        await ReservedBook.findByIdAndDelete(reserved._id);
+        deletedCount++;
+        console.log(`🗑️ Deleted orphaned reservation for book ${reserved.bookId}`);
+      }
+    }
+    
+    console.log(`✅ Cleanup complete. Deleted ${deletedCount} orphaned records`);
+    
+    res.status(200).json({
+      message: 'Cleanup completed successfully',
+      deletedCount
+    });
+  } catch (err) {
+    console.error('❌ Cleanup error:', err);
+    res.status(500).json({ error: 'Cleanup error: ' + err.message });
+  }
+});
+
 // Diagnostic endpoint to check books with missing required fields
 router.get('/diagnostic/missing-fields', async (req, res) => {
   try {
