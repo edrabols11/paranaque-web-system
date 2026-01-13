@@ -26,7 +26,7 @@ const BooksTable = () => {
       setLoading(true);
       console.log("📖 Starting fetch of all books...");
       const timestamp = new Date().getTime();
-      const url = `https://paranaledge-y7z1.onrender.com/api/books/?limit=10000&_t=${timestamp}`;
+      const url = `https://paranaque-web-system.onrender.com/api/books/?limit=10000&_t=${timestamp}`;
       console.log("📖 Fetching all books from URL:", url);
       
       const response = await fetch(url);
@@ -88,7 +88,7 @@ const BooksTable = () => {
     if (window.confirm("Are you sure you want to archive this book?")) {
       try {
         console.log("📦 Archiving book with ID:", bookId);
-        const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/books/archive/${bookId}`, {
+        const res = await fetch(`https://paranaque-web-system.onrender.com/api/books/archive/${bookId}`, {
           method: 'PUT',
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status: "Archived" }),
@@ -138,7 +138,7 @@ const BooksTable = () => {
 
   const saveEdit = async () => {
     try {
-      const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/books/${editingBook}`, {
+      const res = await fetch(`https://paranaque-web-system.onrender.com/api/books/${editingBook}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editForm)

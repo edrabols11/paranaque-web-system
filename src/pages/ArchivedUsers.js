@@ -15,7 +15,7 @@ const ArchivedUsers = () => {
   const fetchArchivedUsers = async () => {
     try {
       setLoading(true);
-      const res = await fetch("https://paranaledge-y7z1.onrender.com/api/auth/archived-users");
+      const res = await fetch("https://paranaque-web-system.onrender.com/api/auth/archived-users");
       const data = await res.json();
       if (res.ok) {
         setArchivedUsers(data.users);
@@ -42,7 +42,7 @@ const ArchivedUsers = () => {
     if (!confirm) return;
 
     try {
-      const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/auth/archived-users/${userId}`, {
+      const res = await fetch(`https://paranaque-web-system.onrender.com/api/auth/archived-users/${userId}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -80,7 +80,7 @@ const ArchivedUsers = () => {
     if (!confirm) return;
 
     try {
-      const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/auth/archived-users/${userId}/restore`, {
+      const res = await fetch(`https://paranaque-web-system.onrender.com/api/auth/archived-users/${userId}/restore`, {
         method: "PUT",
       });
       if (res.ok) {

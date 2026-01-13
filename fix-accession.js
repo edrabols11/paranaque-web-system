@@ -5,7 +5,7 @@ async function fixAccessionNumbers() {
   try {
     console.log('🔧 Calling fix-accession-numbers endpoint...');
     const response = await fetch(
-      'https://paranaledge-y7z1.onrender.com/api/books/admin/fix-accession-numbers',
+      'https://paranaque-web-system.onrender.com/api/books/admin/fix-accession-numbers',
       { method: 'POST' }
     );
     

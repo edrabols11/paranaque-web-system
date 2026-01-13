@@ -54,7 +54,7 @@ const UserHome = () => {
     const limit = 24;
     // Add cache busting with timestamp
     const timestamp = new Date().getTime();
-    fetch(`https://paranaledge-y7z1.onrender.com/api/books?page=${page}&limit=${limit}&_t=${timestamp}`)
+    fetch(`https://paranaque-web-system.onrender.com/api/books?page=${page}&limit=${limit}&_t=${timestamp}`)
       .then((res) => res.json())
       .then((data) => {
         console.log("📚 Fetched books with images:", data.books?.map(b => ({ title: b.title, hasImage: !!b.image })));
@@ -67,7 +67,7 @@ const UserHome = () => {
   const fetchAllBooksForRecommendations = async () => {
     try {
       const timestamp = new Date().getTime();
-      const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/books?limit=10000&_t=${timestamp}`);
+      const res = await fetch(`https://paranaque-web-system.onrender.com/api/books?limit=10000&_t=${timestamp}`);
       const data = await res.json();
       setAllBooks(data.books || []);
     } catch (error) {
@@ -80,7 +80,7 @@ const UserHome = () => {
     if (!userEmail) return;
 
     try {
-      const response = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/user/${userEmail}`);
+      const response = await fetch(`https://paranaque-web-system.onrender.com/api/transactions/user/${userEmail}`);
       const data = await response.json();
       if (response.ok) {
         // Filter only pending and approved reservations
@@ -115,7 +115,7 @@ const UserHome = () => {
       return;
     }
     try {
-      const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/borrow-request`, {
+      const res = await fetch(`https://paranaque-web-system.onrender.com/api/transactions/borrow-request`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bookId: selectedBook._id, userEmail }),
@@ -181,7 +181,7 @@ const UserHome = () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-      const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/reserve`, {
+      const res = await fetch(`https://paranaque-web-system.onrender.com/api/transactions/reserve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bookId: selectedBook._id, userEmail }),
@@ -234,7 +234,7 @@ const UserHome = () => {
 
   const handleBookmark = async (bookId) => {
     try {
-      const res = await fetch("https://paranaledge-y7z1.onrender.com/api/bookmarks/add", {
+      const res = await fetch("https://paranaque-web-system.onrender.com/api/bookmarks/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ book_id: bookId, email: userEmail }),
@@ -267,7 +267,7 @@ const UserHome = () => {
     if (!userEmail) return;
 
     try {
-      const response = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/user/${userEmail}`);
+      const response = await fetch(`https://paranaque-web-system.onrender.com/api/transactions/user/${userEmail}`);
       const data = await response.json();
       
       if (response.ok && data.transactions && Array.isArray(data.transactions)) {
@@ -296,7 +296,7 @@ const UserHome = () => {
 
     try {
       console.log("Calling AI recommend endpoint with borrowed books:", borrowed);
-      const response = await fetch('https://paranaledge-y7z1.onrender.com/api/ai/recommend', {
+      const response = await fetch('https://paranaque-web-system.onrender.com/api/ai/recommend', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -325,7 +325,7 @@ const UserHome = () => {
 
   const fetchBookmarks = async () => {
     try {
-      const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/bookmarks/get?email=${userEmail}`, {
+      const res = await fetch(`https://paranaque-web-system.onrender.com/api/bookmarks/get?email=${userEmail}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" }
       });

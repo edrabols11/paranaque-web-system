@@ -15,7 +15,7 @@ const AdminDashboardTable = () => {
     try {
       setLoading(true);
       const timestamp = new Date().getTime();
-      const response = await fetch(`https://paranaledge-y7z1.onrender.com/api/books/?_t=${timestamp}`);
+      const response = await fetch(`https://paranaque-web-system.onrender.com/api/books/?_t=${timestamp}`);
       const data = await response.json();
       if (response.ok) {
         console.log("📚 Admin fetched books:", data.books?.length, "books with images");

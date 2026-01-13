@@ -23,7 +23,7 @@ const PendingRequestTable = () => {
   const fetchPendingRequest = async () => {
     try {
       setLoading(true);
-      const response = await fetch('https://paranaledge-y7z1.onrender.com/api/transactions/pending-requests?limit=10000');
+      const response = await fetch('https://paranaque-web-system.onrender.com/api/transactions/pending-requests?limit=10000');
       const data = await response.json();
       if (response.ok) {
         const allRequests = data.transactions || [];
@@ -46,7 +46,7 @@ const PendingRequestTable = () => {
 
   const fetchReturnRequests = async () => {
     try {
-      const response = await fetch('https://paranaledge-y7z1.onrender.com/api/transactions/return-requests');
+      const response = await fetch('https://paranaque-web-system.onrender.com/api/transactions/return-requests');
       const data = await response.json();
       if (response.ok) {
         setReturnRequests(data.requests || []);
@@ -63,7 +63,7 @@ const PendingRequestTable = () => {
       return;
     }
     try {
-      const response = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/approve-borrow/${borrowId}`, {
+      const response = await fetch(`https://paranaque-web-system.onrender.com/api/transactions/approve-borrow/${borrowId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -95,7 +95,7 @@ const PendingRequestTable = () => {
       return;
     }
     try {
-      const response = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/return-requests/${returnRequestId}/approve`, {
+      const response = await fetch(`https://paranaque-web-system.onrender.com/api/transactions/return-requests/${returnRequestId}/approve`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -122,7 +122,7 @@ const PendingRequestTable = () => {
       return;
     }
     try {
-      const response = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/return-requests/${returnRequestId}/reject`, {
+      const response = await fetch(`https://paranaque-web-system.onrender.com/api/transactions/return-requests/${returnRequestId}/reject`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -153,7 +153,7 @@ const PendingRequestTable = () => {
       return;
     }
     try {
-      const response = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/reject-borrow/${selectedBorrow._id}`, {
+      const response = await fetch(`https://paranaque-web-system.onrender.com/api/transactions/reject-borrow/${selectedBorrow._id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -181,7 +181,7 @@ const PendingRequestTable = () => {
     }
 
     try {
-      const response = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/approve-reservation/${reservationId}`, {
+      const response = await fetch(`https://paranaque-web-system.onrender.com/api/transactions/approve-reservation/${reservationId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -213,7 +213,7 @@ const PendingRequestTable = () => {
     }
 
     try {
-      const response = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/reject-reservation/${selectedReservation._id}`, {
+      const response = await fetch(`https://paranaque-web-system.onrender.com/api/transactions/reject-reservation/${selectedReservation._id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -41,7 +41,7 @@ const Analytics = () => {
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const res = await fetch("https://paranaledge-y7z1.onrender.com/api/books?limit=10000");
+        const res = await fetch("https://paranaque-web-system.onrender.com/api/books?limit=10000");
         const data = await res.json();
         if (res.ok) {
           setBooks(data.books.filter((b) => !b.archived));
@@ -56,7 +56,7 @@ const Analytics = () => {
 
     const fetchBorrowedBooks = async () => {
       try {
-        const res = await fetch("https://paranaledge-y7z1.onrender.com/api/books/borrowed?limit=10000");
+        const res = await fetch("https://paranaque-web-system.onrender.com/api/books/borrowed?limit=10000");
         const data = await res.json();
 
         if (res.ok) {
@@ -73,7 +73,7 @@ const Analytics = () => {
 
     const fetchTodayCount = async () => {
       try {
-        const res = await fetch("https://paranaledge-y7z1.onrender.com/api/books/stats/today");
+        const res = await fetch("https://paranaque-web-system.onrender.com/api/books/stats/today");
         const data = await res.json();
         if (res.ok) {
           setTodayCount(data.todayCount);
@@ -87,7 +87,7 @@ const Analytics = () => {
     const fetchBorrowedWeekCount = async () => {
       try {
         const res = await fetch(
-          "https://paranaledge-y7z1.onrender.com/api/books/stats/borrowed-week"
+          "https://paranaque-web-system.onrender.com/api/books/stats/borrowed-week"
         );
         const data = await res.json();
         if (res.ok) {
@@ -104,7 +104,7 @@ const Analytics = () => {
     const fetchMostBorrowedBooks = async () => {
       try {
         const res = await fetch(
-          "https://paranaledge-y7z1.onrender.com/api/books/stats/most-borrowed"
+          "https://paranaque-web-system.onrender.com/api/books/stats/most-borrowed"
         );
         const data = await res.json();
         if (res.ok) {
@@ -120,7 +120,7 @@ const Analytics = () => {
     const fetchBorrowedTodayBooks = async () => {
       try {
         const res = await fetch(
-          "https://paranaledge-y7z1.onrender.com/api/books/stats/borrowed-today"
+          "https://paranaque-web-system.onrender.com/api/books/stats/borrowed-today"
         );
         const data = await res.json();
         if (res.ok) {
@@ -136,7 +136,7 @@ const Analytics = () => {
     const fetchBorrowedMonthBooks = async () => {
       try {
         const res = await fetch(
-          "https://paranaledge-y7z1.onrender.com/api/books/stats/borrowed-month"
+          "https://paranaque-web-system.onrender.com/api/books/stats/borrowed-month"
         );
         const data = await res.json();
         if (res.ok) {

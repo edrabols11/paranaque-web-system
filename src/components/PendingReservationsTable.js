@@ -17,7 +17,7 @@ const PendingReservationsTable = () => {
   const fetchPendingReservations = async () => {
     try {
       setLoading(true);
-      const response = await fetch('https://paranaledge-y7z1.onrender.com/api/transactions/pending-reservations');
+      const response = await fetch('https://paranaque-web-system.onrender.com/api/transactions/pending-reservations');
       const data = await response.json();
 
       if (response.ok) {
@@ -40,7 +40,7 @@ const PendingReservationsTable = () => {
     }
 
     try {
-      const response = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/approve-reservation/${reservationId}`, {
+      const response = await fetch(`https://paranaque-web-system.onrender.com/api/transactions/approve-reservation/${reservationId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -77,7 +77,7 @@ const PendingReservationsTable = () => {
     }
 
     try {
-      const response = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/reject-reservation/${selectedReservation._id}`, {
+      const response = await fetch(`https://paranaque-web-system.onrender.com/api/transactions/reject-reservation/${selectedReservation._id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

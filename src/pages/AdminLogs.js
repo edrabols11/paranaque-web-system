@@ -10,7 +10,7 @@ const AdminLogs = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch("https://paranaledge-y7z1.onrender.com/api/logs")
+    fetch("https://paranaque-web-system.onrender.com/api/logs")
       .then((res) => res.json())
       .then((data) => {
         console.log('Fetched logs:', data); // Debug log

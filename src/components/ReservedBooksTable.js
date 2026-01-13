@@ -14,7 +14,7 @@ const ReservedBooksTable = () => {
   const fetchReservedBooks = async () => {
     try {
       setLoading(true);
-      const response = await fetch('https://paranaledge-y7z1.onrender.com/api/transactions/reserved-books?limit=10000');
+      const response = await fetch('https://paranaque-web-system.onrender.com/api/transactions/reserved-books?limit=10000');
       const data = await response.json();
       if (response.ok) {
         setReservedBooks(data.reservedBooks || []);

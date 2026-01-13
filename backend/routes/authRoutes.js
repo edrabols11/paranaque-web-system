@@ -94,8 +94,8 @@ router.post("/register", async (req, res) => {
       html: `
         <h2>Email Verification</h2>
         <p>Welcome to Parañaledge! Please verify your email by clicking the link below:</p>
-        <a href="https://paranaledge-y7z1.onrender.com/api/auth/verify/${verificationToken}" style="display: inline-block; padding: 10px 20px; background-color: #2e7d32; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0;">Verify Email</a>
-        <p>Or copy and paste this link: https://paranaledge-y7z1.onrender.com/api/auth/verify/${verificationToken}</p>
+        <a href="https://paranaque-web-system.onrender.com/api/auth/verify/${verificationToken}" style="display: inline-block; padding: 10px 20px; background-color: #2e7d32; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0;">Verify Email</a>
+        <p>Or copy and paste this link: https://paranaque-web-system.onrender.com/api/auth/verify/${verificationToken}</p>
         <p>This link expires in 24 hours.</p>
         <p>If you did not register, please ignore this email.</p>
       `,
@@ -570,7 +570,7 @@ router.post('/forgot-password', async (req, res) => {
     await user.save();
 
     // Send email with reset link
-    const resetLink = `https://paranaledge-y7z1.onrender.com/reset-password/${resetToken}`;
+    const resetLink = `https://paranaque-web-system.onrender.com/reset-password/${resetToken}`;
     const mailOptions = {
       from: process.env.GMAIL_USER,
       to: email,

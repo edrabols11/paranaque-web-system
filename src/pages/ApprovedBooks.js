@@ -16,7 +16,7 @@ const ApprovedBooks = () => {
 
   const fetchApprovedBooks = async () => {
     try {
-      const response = await fetch('https://paranaledge-y7z1.onrender.com/api/approved-books');
+      const response = await fetch('https://paranaque-web-system.onrender.com/api/approved-books');
       if (!response.ok) {
         throw new Error('Failed to fetch approved books');
       }
@@ -78,7 +78,7 @@ const ApprovedBooks = () => {
 
   const saveEdit = async () => {
     try {
-      const response = await fetch(`https://paranaledge-y7z1.onrender.com/api/books/${editingBook}`, {
+      const response = await fetch(`https://paranaque-web-system.onrender.com/api/books/${editingBook}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editForm)

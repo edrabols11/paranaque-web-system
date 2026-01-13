@@ -34,7 +34,7 @@ const AddBook = ({ onBookAdded }) => {
     const fetchNextAccessionNumber = async () => {
       try {
         console.log("📚 Fetching next accession number...");
-        const response = await fetch("https://paranaledge-y7z1.onrender.com/api/books/?limit=1&sort=-createdAt");
+        const response = await fetch("https://paranaque-web-system.onrender.com/api/books/?limit=1&sort=-createdAt");
         const data = await response.json();
         
         if (data.books && data.books.length > 0) {
@@ -201,7 +201,7 @@ const AddBook = ({ onBookAdded }) => {
     });
 
     try {
-      const res = await fetch("https://paranaledge-y7z1.onrender.com/api/books", {
+      const res = await fetch("https://paranaque-web-system.onrender.com/api/books", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)

@@ -30,8 +30,8 @@ const ReturnRequests = () => {
     try {
       setLoading(true);
       const endpoint = filterStatus === "all" 
-        ? "https://paranaledge-y7z1.onrender.com/api/transactions/return-requests/all"
-        : "https://paranaledge-y7z1.onrender.com/api/transactions/return-requests";
+        ? "https://paranaque-web-system.onrender.com/api/transactions/return-requests/all"
+        : "https://paranaque-web-system.onrender.com/api/transactions/return-requests";
       
       const res = await fetch(endpoint);
       const data = await res.json();
@@ -73,7 +73,7 @@ const ReturnRequests = () => {
 
     try {
       const res = await fetch(
-        `https://paranaledge-y7z1.onrender.com/api/transactions/return-requests/${requestId}/approve`,
+        `https://paranaque-web-system.onrender.com/api/transactions/return-requests/${requestId}/approve`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -121,7 +121,7 @@ const ReturnRequests = () => {
 
     try {
       const res = await fetch(
-        `https://paranaledge-y7z1.onrender.com/api/transactions/return-requests/${requestId}/reject`,
+        `https://paranaque-web-system.onrender.com/api/transactions/return-requests/${requestId}/reject`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },

@@ -15,7 +15,7 @@ const GenreBooks = () => {
   const fetchBooks = (p = page) => {
     const limit = 24; // 4 rows x 6 columns
     const timestamp = new Date().getTime();
-    fetch(`https://paranaledge-y7z1.onrender.com/api/books?genre=${encodeURIComponent(genre)}&page=${p}&limit=${limit}&_t=${timestamp}`)
+    fetch(`https://paranaque-web-system.onrender.com/api/books?genre=${encodeURIComponent(genre)}&page=${p}&limit=${limit}&_t=${timestamp}`)
       .then((res) => res.json())
       .then((data) => {
         setBooks(data.books || []);
@@ -41,7 +41,7 @@ const GenreBooks = () => {
       return;
     }
     try {
-      const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/borrow-request`, {
+      const res = await fetch(`https://paranaque-web-system.onrender.com/api/transactions/borrow-request`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bookId: selectedBook._id, userEmail }),
@@ -71,7 +71,7 @@ const GenreBooks = () => {
     }
 
     try {
-      const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/transactions/reserve`, {
+      const res = await fetch(`https://paranaque-web-system.onrender.com/api/transactions/reserve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bookId: selectedBook._id, userEmail }),

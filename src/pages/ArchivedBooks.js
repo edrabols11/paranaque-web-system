@@ -17,7 +17,7 @@ const ArchivedBooks = () => {
     const fetchArchivedBooks = async () => {
       try {
         console.log("📚 Fetching archived books...");
-        const res = await fetch('https://paranaledge-y7z1.onrender.com/api/books/archived/all');
+        const res = await fetch('https://paranaque-web-system.onrender.com/api/books/archived/all');
         const data = await res.json();
         console.log("📚 Archived books response:", data);
         if (res.ok) {
@@ -53,7 +53,7 @@ const ArchivedBooks = () => {
     if (window.confirm("Are you sure you want to permanently delete this book?")) {
       try {
         console.log("🗑️ Permanently deleting archived book:", bookId);
-        const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/books/archived/${bookId}`, {
+        const res = await fetch(`https://paranaque-web-system.onrender.com/api/books/archived/${bookId}`, {
           method: "DELETE",
         });
         const data = await res.json();
@@ -76,7 +76,7 @@ const ArchivedBooks = () => {
   const handleReturnToStocks = async (bookId) => {
     if (window.confirm("Are you sure you want to return this book to stocks?")) {
       try {
-        const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/books/archived/return/${bookId}`, {
+        const res = await fetch(`https://paranaque-web-system.onrender.com/api/books/archived/return/${bookId}`, {
           method: 'PUT',
           headers: { "Content-Type": "application/json" },
         });

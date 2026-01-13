@@ -17,10 +17,10 @@ const BorrowedBooksPerTable = () => {
       try {
         setLoading(true);
 
-        const borrowedRes = await fetch("https://paranaledge-y7z1.onrender.com/api/books/borrowed");
+        const borrowedRes = await fetch("https://paranaque-web-system.onrender.com/api/books/borrowed");
         const borrowedData = await borrowedRes.json();
 
-        const approvedRes = await fetch("https://paranaledge-y7z1.onrender.com/api/transactions/approved-books");
+        const approvedRes = await fetch("https://paranaque-web-system.onrender.com/api/transactions/approved-books");
         const approvedData = await approvedRes.json();
 
         if (borrowedRes.ok && approvedRes.ok) {
