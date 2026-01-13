@@ -17,29 +17,33 @@ const getNextAccessionNumber = async () => {
   try {
     console.log("🔢 Generating next accession number...");
     
-    // Find the last book added (by createdAt)
-    const lastBook = await Book.findOne()
+    // Find ALL books sorted by creation date (newest first)
+    const books = await Book.find()
       .sort({ createdAt: -1 })
-      .exec();
+      .limit(100); // Check last 100 books
+    
+    console.log("📚 Found", books.length, "books");
     
     const currentYear = new Date().getFullYear();
     let nextNumber = 1;
     
-    if (lastBook && lastBook.accessionNumber) {
-      console.log("📚 Last book accession number:", lastBook.accessionNumber);
-      
-      // Parse the accession number (format: YYYY-XXXX)
-      const parts = lastBook.accessionNumber.split('-');
-      if (parts.length === 2) {
-        const lastYear = parseInt(parts[0]);
-        const lastSequence = parseInt(parts[1]);
+    // Find the last book that has a valid accession number in current year
+    for (const book of books) {
+      if (book.accessionNumber) {
+        console.log("📚 Checking book:", book.title, "accession:", book.accessionNumber);
         
-        // If it's the same year, increment the sequence
-        if (lastYear === currentYear) {
-          nextNumber = lastSequence + 1;
-        } else {
-          // If it's a new year, start from 1
-          nextNumber = 1;
+        // Parse the accession number (format: YYYY-XXXX)
+        const parts = book.accessionNumber.split('-');
+        if (parts.length === 2) {
+          const lastYear = parseInt(parts[0]);
+          const lastSequence = parseInt(parts[1]);
+          
+          // If it's from the same year, use this as base
+          if (lastYear === currentYear) {
+            nextNumber = lastSequence + 1;
+            console.log("📚 Found current year accession, next number will be:", nextNumber);
+            break;
+          }
         }
       }
     }
