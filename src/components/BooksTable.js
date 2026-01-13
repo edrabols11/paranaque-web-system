@@ -16,23 +16,38 @@ const BooksTable = () => {
     console.log("🔍 BooksTable state - showAddBookModal:", showAddBookModal);
   }, [showAddBookModal]);
 
+  useEffect(() => {
+    console.log("📚 BooksTable mounted, fetching books");
+    fetchReservedBooks();
+  }, []);
+
   const fetchReservedBooks = async () => {
     try {
       setLoading(true);
+      console.log("📖 Starting fetch of books...");
       const timestamp = new Date().getTime();
-      const response = await fetch(`https://paranaledge-y7z1.onrender.com/api/books/?limit=10000&_t=${timestamp}`);
+      const url = `https://paranaledge-y7z1.onrender.com/api/books/?limit=10000&_t=${timestamp}`;
+      console.log("📖 Fetching from URL:", url);
+      
+      const response = await fetch(url);
+      console.log("📖 Response status:", response.status, response.statusText);
+      
       const data = await response.json();
+      console.log("📖 Response data:", data);
+      
       if (response.ok) {
-        console.log("📚 BooksTable fetched books with images");
+        console.log("✅ BooksTable fetched books:", data.books?.length || 0, "books");
         setBooks(data.books || []);
         setError(null);
       } else {
+        console.error("❌ API error:", data);
         setError(data.message || 'Failed to fetch reserved books');
       }
     } catch (err) {
+      console.error('❌ Fetch error:', err);
       setError('Error connecting to server. Please try again.');
-      console.error('Error:', err);
     } finally {
+      console.log("📖 Setting loading to false");
       setLoading(false);
     }
   };

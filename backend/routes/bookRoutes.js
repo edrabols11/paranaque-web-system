@@ -186,7 +186,7 @@ router.post('/', async (req, res) => {
 
 router.get("/", async (req, res) => {
   const { genre, status } = req.query;
-  console.log("api/books - GET", genre, status);
+  console.log("📚 api/books - GET called with genre:", genre, "status:", status);
 
   try {
     const now = new Date();
@@ -230,12 +230,16 @@ router.get("/", async (req, res) => {
       };
     }
 
+    console.log("📊 Filter:", filter);
     const totalBooks = await Book.countDocuments(filter);
+    console.log("📊 Total books found:", totalBooks);
 
     const books = await Book.find(filter)
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 });
+
+    console.log("📚 Books retrieved:", books.length);
 
     // Ensure all books have stock and availableStock values
     const booksWithStock = await Promise.all(books.map(async (book) => {
@@ -270,7 +274,7 @@ router.get("/", async (req, res) => {
       return bookObj;
     }));
 
-    console.log(`Returning ${books.length} books from page ${page}`);
+    console.log(`✅ Returning ${booksWithStock.length} books from page ${page}`);
 
     res.status(200).json({
       currentPage: page,
@@ -280,8 +284,9 @@ router.get("/", async (req, res) => {
     });
 
   } catch (err) {
-    console.error("Error fetching books:", err);
-    res.status(500).json({ error: "Error fetching books" });
+    console.error("❌ Error fetching books:", err.message);
+    console.error("❌ Full error:", err);
+    res.status(500).json({ error: "Error fetching books: " + err.message });
   }
 });
 
