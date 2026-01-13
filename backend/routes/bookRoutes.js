@@ -137,10 +137,22 @@ router.post('/', async (req, res) => {
     try {
       generatedAccessionNumber = await getNextAccessionNumber();
       console.log("📚 Generated accession number:", generatedAccessionNumber);
+      
+      // Verify it's not empty
+      if (!generatedAccessionNumber || generatedAccessionNumber.trim() === '') {
+        throw new Error('Generated accession number is empty');
+      }
     } catch (accessionErr) {
       console.error("❌ Failed to generate accession number:", accessionErr.message);
       generatedAccessionNumber = `${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`;
       console.log("⚠️ Using fallback accession:", generatedAccessionNumber);
+    }
+    
+    // Final verification before saving
+    if (!generatedAccessionNumber) {
+      const year = new Date().getFullYear();
+      generatedAccessionNumber = `${year}-${Date.now().toString().slice(-5)}`;
+      console.log("🚨 FINAL FALLBACK accession:", generatedAccessionNumber);
     }
 
     const newBook = new Book({
@@ -160,9 +172,17 @@ router.post('/', async (req, res) => {
       status: 'available'
     });
     
+    console.log("💾 Book object before save:");
+    console.log("  - title:", newBook.title);
+    console.log("  - accessionNumber:", newBook.accessionNumber);
+    console.log("  - Full object:", JSON.stringify(newBook.toObject(), null, 2));
+    
     console.log("💾 Saving book to database...");
-    await newBook.save();
-    console.log("✅ Book saved with accession number:", newBook.accessionNumber);
+    const savedBook = await newBook.save();
+    
+    console.log("✅ Book saved successfully!");
+    console.log("✅ Saved book accession number:", savedBook.accessionNumber);
+    console.log("✅ Full saved object:", JSON.stringify(savedBook.toObject(), null, 2));
 
     // Log book addition
     await new Log({
@@ -170,7 +190,7 @@ router.post('/', async (req, res) => {
       action: `Added new book: ${title} (Accession: ${generatedAccessionNumber})`
     }).save();
 
-    res.status(201).json({ message: 'Book added successfully!', book: newBook });
+    res.status(201).json({ message: 'Book added successfully!', book: savedBook });
   } catch (err) {
     console.error("❌ Error adding book - Full Error Object:", err);
     console.error("❌ Error message:", err.message);
