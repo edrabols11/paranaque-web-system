@@ -217,31 +217,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Simple test endpoint
-router.get("/simple-test", (req, res) => {
-  res.json({ message: "✅ bookRoutes is loaded and working!" });
-});
-
-// Test endpoint - SIMPLE GET to verify accession number generation works
-router.get("/test-accession", async (req, res) => {
-  try {
-    console.log("🧪 TEST: Generating accession number...");
-    const accession = await getNextAccessionNumber();
-    console.log("🧪 Generated:", accession);
-    
-    res.json({
-      success: true,
-      accessionNumber: accession
-    });
-  } catch (err) {
-    console.error("❌ TEST ERROR:", err);
-    res.status(500).json({
-      success: false,
-      error: err.message
-    });
-  }
-});
-
 router.get("/", async (req, res) => {
   const { genre, status } = req.query;
   console.log("📚 api/books - GET called with genre:", genre, "status:", status);
