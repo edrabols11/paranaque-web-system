@@ -36,7 +36,23 @@ const bookSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  reservedBy: {
+    type: String,
+    default: null
+  },
+  reserveUntil: {
+    type: Date,
+    default: null
+  },
+  borrowedAt: {
+    type: Date,
+    default: null
+  },
   author: {
+    type: String,
+    required: false,
+  },
+  genre: {
     type: String,
     required: false,
   },
