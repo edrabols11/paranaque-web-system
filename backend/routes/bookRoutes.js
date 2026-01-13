@@ -12,46 +12,43 @@ const { uploadBase64ToSupabase, getFullImageUrl } = require('../utils/upload');
 
 const router = express.Router();
 
-// Function to get next accession number using Counter model (uniform incrementation with DDC format)
+// Function to get next accession number by incrementing the last book's number
 const getNextAccessionNumber = async () => {
   try {
-    console.log("🔢 Starting accession number generation...");
+    console.log("🔢 Generating next accession number...");
     
-    // First, ensure the counter exists
-    let counter = await Counter.findOne({ name: 'accessionNumber' });
-    if (!counter) {
-      console.log("🔢 Counter for accessionNumber not found, creating it...");
-      counter = await Counter.create({ name: 'accessionNumber', value: 0 });
-      console.log("🔢 Created accession counter:", counter);
-    }
+    // Find the last book added (by createdAt)
+    const lastBook = await Book.findOne()
+      .sort({ createdAt: -1 })
+      .exec();
     
-    // Use atomic findOneAndUpdate with MongoDB's $inc operator
-    const updatedCounter = await Counter.findOneAndUpdate(
-      { name: 'accessionNumber' },
-      { $inc: { value: 1 } },
-      { 
-        new: true, 
-        upsert: true
-      }
-    ).maxTimeMS(5000); // Add timeout to prevent hanging
-    
-    console.log("📈 Counter object:", updatedCounter);
-    
-    if (!updatedCounter) {
-      throw new Error('Counter returned null or undefined');
-    }
-    
-    const counterValue = updatedCounter.value || 1;
-    console.log("📈 Counter value:", counterValue);
-    
-    // Format as DDC-style accession number: YYYY-XXXX (Year-Sequence)
-    // Example: 2026-0001, 2026-0002, etc.
     const currentYear = new Date().getFullYear();
-    const sequenceNumber = String(counterValue).padStart(4, '0');
+    let nextNumber = 1;
+    
+    if (lastBook && lastBook.accessionNumber) {
+      console.log("📚 Last book accession number:", lastBook.accessionNumber);
+      
+      // Parse the accession number (format: YYYY-XXXX)
+      const parts = lastBook.accessionNumber.split('-');
+      if (parts.length === 2) {
+        const lastYear = parseInt(parts[0]);
+        const lastSequence = parseInt(parts[1]);
+        
+        // If it's the same year, increment the sequence
+        if (lastYear === currentYear) {
+          nextNumber = lastSequence + 1;
+        } else {
+          // If it's a new year, start from 1
+          nextNumber = 1;
+        }
+      }
+    }
+    
+    // Format as YYYY-XXXX (e.g., 2026-0001, 2026-0002)
+    const sequenceNumber = String(nextNumber).padStart(4, '0');
     const accessionNumber = `${currentYear}-${sequenceNumber}`;
     
     console.log(`✅ Generated accession number: ${accessionNumber}`);
-    
     return accessionNumber;
   } catch (err) {
     console.error('❌ Error in getNextAccessionNumber:', err.message);
@@ -59,7 +56,7 @@ const getNextAccessionNumber = async () => {
     // Fallback: use simple timestamp-based number
     const currentYear = new Date().getFullYear();
     const fallback = `${currentYear}-${String(Date.now()).slice(-4)}`;
-    console.log('⚠️  Using fallback accession number (Counter failed):', fallback);
+    console.log('⚠️  Using fallback accession number:', fallback);
     return fallback;
   }
 };
