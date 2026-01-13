@@ -383,17 +383,38 @@ router.put('/archive/:id', async (req, res) => {
       const errors = Object.keys(validationError.errors).map(k => 
         `${k}: ${validationError.errors[k].message}`
       ).join('; ');
-      return res.status(400).json({ error: `Validation failed: ${errors}` });
+      console.error("❌ Detailed validation errors:", errors);
+      return res.status(400).json({ 
+        error: `Validation failed: ${errors}`,
+        details: validationError.errors
+      });
     }
 
     console.log("💾 Saving archived book...");
-    await archivedBook.save();
-    console.log("✅ Archived book saved:", archivedBook._id);
+    try {
+      await archivedBook.save();
+      console.log("✅ Archived book saved:", archivedBook._id);
+    } catch (saveErr) {
+      console.error("❌ Save error:", saveErr.message);
+      console.error("❌ Save error full:", saveErr);
+      if (saveErr.errors) {
+        console.error("❌ Mongoose validation errors on save:");
+        Object.keys(saveErr.errors).forEach(field => {
+          console.error(`  - ${field}: ${saveErr.errors[field].message}`);
+        });
+      }
+      throw saveErr;
+    }
 
     // Delete original book
     console.log("🗑️ Deleting original book...");
-    await Book.findByIdAndDelete(bookId);
-    console.log("✅ Original book deleted");
+    try {
+      await Book.findByIdAndDelete(bookId);
+      console.log("✅ Original book deleted");
+    } catch (deleteErr) {
+      console.error("❌ Delete error:", deleteErr.message);
+      throw deleteErr;
+    }
 
     // Log the action (non-critical)
     try {
@@ -409,6 +430,7 @@ router.put('/archive/:id', async (req, res) => {
     console.error("❌ Archive route error:", err.message);
     console.error("❌ Full error object:", err);
     console.error("❌ Error name:", err.name);
+    console.error("❌ Error code:", err.code);
     
     // Detailed logging for different error types
     if (err.errors) {
@@ -424,19 +446,27 @@ router.put('/archive/:id', async (req, res) => {
     
     // Build detailed error message
     let errorMsg = err.message || 'Unknown error';
+    let detailedErrors = {};
+    
     if (err.errors) {
-      const validationErrors = Object.keys(err.errors).map(field => 
+      detailedErrors = Object.keys(err.errors).map(field => 
         `${field}: ${err.errors[field].message}`
       ).join('; ');
-      errorMsg = validationErrors;
     }
     
     console.error("❌ Final error message:", errorMsg);
+    console.error("❌ Detailed errors:", detailedErrors);
     
     res.status(500).json({ 
-      error: errorMsg,
+      error: errorMsg || 'Error archiving book',
       type: err.name,
-      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+      code: err.code,
+      details: detailedErrors || err.message,
+      debugInfo: process.env.NODE_ENV === 'development' ? {
+        message: err.message,
+        errors: err.errors,
+        stack: err.stack?.split('\n').slice(0, 5)
+      } : undefined
     });
   }
 });
