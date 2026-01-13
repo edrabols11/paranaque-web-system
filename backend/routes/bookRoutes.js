@@ -17,38 +17,42 @@ const getNextAccessionNumber = async () => {
   try {
     console.log("🔢 Generating next accession number...");
     
-    // Find ALL books sorted by creation date (newest first)
-    const books = await Book.find()
-      .sort({ createdAt: -1 })
-      .limit(100); // Check last 100 books
-    
-    console.log("📚 Found", books.length, "books");
-    
     const currentYear = new Date().getFullYear();
     let nextNumber = 1;
     
-    // Find the last book that has a valid accession number in current year
-    for (const book of books) {
-      if (book.accessionNumber) {
-        console.log("📚 Checking book:", book.title, "accession:", book.accessionNumber);
+    // Try to find the highest accession number in the database
+    try {
+      const books = await Book.find({ accessionNumber: { $exists: true, $ne: null, $ne: '' } })
+        .sort({ createdAt: -1 })
+        .limit(1);
+      
+      if (books && books.length > 0) {
+        const lastBook = books[0];
+        console.log("📚 Found book with accession:", lastBook.accessionNumber);
         
-        // Parse the accession number (format: YYYY-XXXX)
-        const parts = book.accessionNumber.split('-');
+        const parts = lastBook.accessionNumber.split('-');
         if (parts.length === 2) {
           const lastYear = parseInt(parts[0]);
           const lastSequence = parseInt(parts[1]);
           
-          // If it's from the same year, use this as base
           if (lastYear === currentYear) {
             nextNumber = lastSequence + 1;
-            console.log("📚 Found current year accession, next number will be:", nextNumber);
-            break;
+            console.log("📈 Incrementing sequence to:", nextNumber);
+          } else {
+            console.log("📆 New year, resetting sequence to 1");
+            nextNumber = 1;
           }
         }
+      } else {
+        console.log("📚 No previous accession numbers found, starting from 1");
+        nextNumber = 1;
       }
+    } catch (dbErr) {
+      console.error("⚠️  Error querying books:", dbErr.message);
+      nextNumber = 1;
     }
     
-    // Format as YYYY-XXXX (e.g., 2026-0001, 2026-0002)
+    // Format as YYYY-XXXX
     const sequenceNumber = String(nextNumber).padStart(4, '0');
     const accessionNumber = `${currentYear}-${sequenceNumber}`;
     
@@ -57,10 +61,10 @@ const getNextAccessionNumber = async () => {
   } catch (err) {
     console.error('❌ Error in getNextAccessionNumber:', err.message);
     
-    // Fallback: use simple timestamp-based number
+    // ALWAYS return a fallback - never return null/undefined
     const currentYear = new Date().getFullYear();
     const fallback = `${currentYear}-${String(Date.now()).slice(-4)}`;
-    console.log('⚠️  Using fallback accession number:', fallback);
+    console.log('⚠️  Returning fallback accession number:', fallback);
     return fallback;
   }
 };
