@@ -68,6 +68,7 @@ const bookSchema = new mongoose.Schema({
   accessionNumber: {
     type: String,
     required: false,
+    default: null,
   },
   callNumber: {
     type: String,
@@ -88,6 +89,7 @@ const bookSchema = new mongoose.Schema({
 // Simple indexes for better performance
 bookSchema.index({ title: 1 });
 bookSchema.index({ genre: 1 });
+bookSchema.index({ accessionNumber: 1 });
 bookSchema.index({ createdAt: -1 });
 
 // Pre-save middleware to clean up expired reservations
