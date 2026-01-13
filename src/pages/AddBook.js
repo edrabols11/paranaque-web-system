@@ -178,6 +178,7 @@ const AddBook = ({ onBookAdded }) => {
           location: { shelf: "", level: "" },
           author: "",
           publisher: "",
+          accessionNumber: "",
           callNumber: "",
           image: null
         });
