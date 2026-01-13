@@ -7,34 +7,51 @@ const ArchivedBook = require('../models/ArchivedBook');
 const Transaction = require('../models/Transaction');
 const Log = require('../models/Log');
 const ReservedBook = require('../models/ReservedBook');
+const Counter = require('../models/Counter');
 const { uploadBase64ToSupabase, getFullImageUrl } = require('../utils/upload');
 
 const router = express.Router();
 
-// Function to get next accession number (using a simple sequential approach)
+// Function to get next accession number using Counter model (uniform incrementation with DDC format)
 const getNextAccessionNumber = async () => {
   try {
     console.log("🔢 Starting accession number generation...");
     
-    // Count total books to generate next sequence number
-    const totalBooks = await Book.countDocuments({});
-    console.log("📊 Total books in database:", totalBooks);
+    // Use atomic findOneAndUpdate with MongoDB's $inc operator
+    const counter = await Counter.findOneAndUpdate(
+      { name: 'accessionNumber' },
+      { $inc: { value: 1 } },
+      { 
+        new: true, 
+        upsert: true
+      }
+    ).maxTimeMS(5000); // Add timeout to prevent hanging
     
-    const nextNumber = totalBooks + 1;
-    console.log("📈 Next number calculated:", nextNumber);
+    console.log("📈 Counter object:", counter);
     
-    // Format as 6-digit zero-padded number (e.g., 000001, 000002, etc.)
-    const formattedNumber = String(nextNumber).padStart(6, '0');
-    console.log(`✅ Generated accession number: ${formattedNumber}`);
+    if (!counter) {
+      throw new Error('Counter returned null or undefined');
+    }
     
-    return formattedNumber;
+    const counterValue = counter.value || 1;
+    console.log("📈 Counter value:", counterValue);
+    
+    // Format as DDC-style accession number: YYYY-XXXX (Year-Sequence)
+    // Example: 2026-0001, 2026-0002, etc.
+    const currentYear = new Date().getFullYear();
+    const sequenceNumber = String(counterValue).padStart(4, '0');
+    const accessionNumber = `${currentYear}-${sequenceNumber}`;
+    
+    console.log(`✅ Generated accession number: ${accessionNumber}`);
+    
+    return accessionNumber;
   } catch (err) {
     console.error('❌ Error in getNextAccessionNumber:', err.message);
-    console.error('❌ Stack:', err.stack);
     
-    // Fallback: use timestamp-based number if counting fails
-    const fallback = String(Date.now()).slice(-6);
-    console.log('⚠️  Using fallback accession number:', fallback);
+    // Fallback: use simple timestamp-based number
+    const currentYear = new Date().getFullYear();
+    const fallback = `${currentYear}-${String(Date.now()).slice(-4)}`;
+    console.log('⚠️  Using fallback accession number (Counter failed):', fallback);
     return fallback;
   }
 };
@@ -58,6 +75,23 @@ router.post('/', async (req, res) => {
     console.log("🔵 POST /api/books called");
     console.log("📝 Request body:", req.body);
     const { title, year, image, userEmail, location, author, publisher, callNumber, category, stock } = req.body;
+    
+    // Validate required fields
+    console.log("🔍 Validating required fields...");
+    if (!title) {
+      return res.status(400).json({ error: 'Title is required' });
+    }
+    if (!year) {
+      return res.status(400).json({ error: 'Year is required' });
+    }
+    if (isNaN(parseInt(year))) {
+      return res.status(400).json({ error: 'Year must be a valid number' });
+    }
+    if (!stock) {
+      return res.status(400).json({ error: 'Stock is required' });
+    }
+    console.log("✅ All required fields present");
+    
     let imageField = null;
 
     // If image is a base64 string, store it directly
@@ -90,8 +124,15 @@ router.post('/', async (req, res) => {
 
     // Auto-generate accession number
     console.log("📚 Generating accession number for:", title);
-    const generatedAccessionNumber = await getNextAccessionNumber();
-    console.log("📚 Generated accession number:", generatedAccessionNumber);
+    let generatedAccessionNumber;
+    try {
+      generatedAccessionNumber = await getNextAccessionNumber();
+      console.log("📚 Generated accession number:", generatedAccessionNumber);
+    } catch (accessionErr) {
+      console.error("❌ Failed to generate accession number:", accessionErr.message);
+      generatedAccessionNumber = `${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`;
+      console.log("⚠️ Using fallback accession:", generatedAccessionNumber);
+    }
 
     const newBook = new Book({
       title,
@@ -109,6 +150,8 @@ router.post('/', async (req, res) => {
       availableStock: parseInt(stock) || 1,
       status: 'available'
     });
+    
+    console.log("💾 Saving book to database...");
     await newBook.save();
     console.log("✅ Book saved with accession number:", newBook.accessionNumber);
 
@@ -120,8 +163,24 @@ router.post('/', async (req, res) => {
 
     res.status(201).json({ message: 'Book added successfully!', book: newBook });
   } catch (err) {
-    console.error("❌ Error adding book:", err);
-    res.status(500).json({ error: 'Server error while adding book: ' + err.message });
+    console.error("❌ Error adding book - Full Error Object:", err);
+    console.error("❌ Error message:", err.message);
+    console.error("❌ Error stack:", err.stack);
+    
+    // Provide detailed error information
+    let errorMsg = err.message;
+    if (err.errors) {
+      // Mongoose validation errors
+      console.error("❌ Mongoose validation errors:", err.errors);
+      errorMsg = Object.keys(err.errors).map(key => {
+        return `${key}: ${err.errors[key].message}`;
+      }).join('; ');
+    }
+    
+    res.status(500).json({ 
+      error: 'Server error while adding book: ' + errorMsg,
+      details: process.env.NODE_ENV === 'development' ? err.toString() : undefined
+    });
   }
 });
 
@@ -231,65 +290,145 @@ router.put('/archive/:id', async (req, res) => {
   console.log("PUT /archive/:id called with ID:", req.params.id, "Body:", req.body);
 
   try {
-    const book = await Book.findById(req.params.id);
-    console.log("📚 Book found:", book ? `${book.title} (${book._id})` : 'NOT FOUND');
+    const bookId = req.params.id;
+    console.log("🔍 Looking for book with ID:", bookId);
+    
+    // Find the book
+    const book = await Book.findById(bookId);
+    console.log("📚 Book found:", book ? `${book.title}` : 'NOT FOUND');
 
     if (!book) {
-      console.log("❌ Book not found with ID:", req.params.id);
       return res.status(404).json({ error: 'Book not found' });
     }
 
-    // If archiving the book
-    if (req.body.status === 'Archived') {
-      console.log("🗂️  Archiving book:", book.title);
-      // Create archived book record
-      try {
-        const archivedBook = new ArchivedBook({
-          title: book.title || 'Unknown Title',
-          year: book.year || new Date().getFullYear(),
-          author: book.author || 'Unknown Author',
-          publisher: book.publisher || 'Unknown Publisher',
-          category: book.category || 'Unknown Category',
-          genre: book.category || book.genre || 'Unknown', // Use category as fallback for genre
-          image: book.image || null,
-          accessionNumber: book.accessionNumber || null,
-          callNumber: book.callNumber || null,
-          location: book.location || null,
-          status: 'Archived'
-        });
-
-        console.log("🗂️  Archived book object before save:", archivedBook);
-        await archivedBook.save();
-        console.log("✅ Archived book saved:", archivedBook._id);
-
-        // Delete from regular books
-        await Book.findByIdAndDelete(req.params.id);
-        console.log("✅ Original book deleted from Books collection");
-
-        res.status(200).json({
-          message: 'Book archived successfully',
-          book: archivedBook,
-        });
-      } catch (saveErr) {
-        console.error("❌ Error saving archived book:", saveErr);
-        console.error("❌ Validation errors:", saveErr.errors);
-        res.status(500).json({ error: 'Error archiving book: Validation failed - ' + saveErr.message });
-      }
-    } else {
+    // Only handle archive status
+    if (req.body.status !== 'Archived') {
       // Regular status update
       book.status = req.body.status;
       await book.save();
-
-      res.status(200).json({
+      return res.status(200).json({
         message: 'Book status updated successfully',
         updatedBook: book,
       });
     }
 
+    // ARCHIVE LOGIC
+    console.log("🗂️ Archiving book:", book.title);
+    
+    // Prepare data for archiving
+    const genreValue = book.category || book.genre || 'Unknown';
+    let yearValue = book.year;
+    
+    // Validate year
+    if (!yearValue || isNaN(yearValue)) {
+      console.warn("⚠️ Invalid year value, using current year");
+      yearValue = new Date().getFullYear();
+    } else {
+      yearValue = parseInt(yearValue);
+      // Ensure year is within valid range
+      if (yearValue < 1000) yearValue = 1000;
+      if (yearValue > new Date().getFullYear() + 50) yearValue = new Date().getFullYear();
+    }
+    
+    console.log("📋 Archive data:");
+    console.log("  - Title:", book.title, "(type:", typeof book.title + ")");
+    console.log("  - Year:", yearValue, "(type:", typeof yearValue + ")");
+    console.log("  - Genre:", genreValue, "(type:", typeof genreValue + ")");
+    console.log("  - Author:", book.author || 'Unknown');
+    console.log("  - Publisher:", book.publisher || '');
+    console.log("  - Category:", book.category || '');
+    console.log("  - Image:", book.image || null);
+    console.log("  - Accession:", book.accessionNumber || '');
+    console.log("  - CallNumber:", book.callNumber || '');
+    console.log("  - Location:", book.location);
+    
+    // Create archived book
+    const archivedBook = new ArchivedBook({
+      title: book.title,
+      year: yearValue,
+      author: book.author || 'Unknown',
+      publisher: book.publisher || '',
+      category: book.category || '',
+      genre: genreValue,
+      image: book.image || null,
+      accessionNumber: book.accessionNumber || '',
+      callNumber: book.callNumber || '',
+      location: book.location || {},
+      status: 'Archived',
+      archivedAt: new Date(),
+      originalBookId: book._id
+    });
+
+    // Validate before saving
+    console.log("🔍 Validating archived book object...");
+    console.log("🔍 ArchivedBook data before validation:", {
+      title: archivedBook.title,
+      year: archivedBook.year,
+      genre: archivedBook.genre,
+      author: archivedBook.author
+    });
+    
+    const validationError = archivedBook.validateSync();
+    if (validationError) {
+      console.error("❌ Validation failed:", validationError.errors);
+      const errors = Object.keys(validationError.errors).map(k => 
+        `${k}: ${validationError.errors[k].message}`
+      ).join('; ');
+      return res.status(400).json({ error: `Validation failed: ${errors}` });
+    }
+
+    console.log("💾 Saving archived book...");
+    await archivedBook.save();
+    console.log("✅ Archived book saved:", archivedBook._id);
+
+    // Delete original book
+    console.log("🗑️ Deleting original book...");
+    await Book.findByIdAndDelete(bookId);
+    console.log("✅ Original book deleted");
+
+    // Log the action (non-critical)
+    try {
+      await new Log({
+        userEmail: req.body.userEmail || 'admin',
+        action: `Archived book: ${book.title} (Accession: ${book.accessionNumber})`
+      }).save();
+    } catch (logErr) {
+      console.warn("⚠️ Log creation failed (non-critical):", logErr.message);
+    }
+
   } catch (err) {
-    console.error("❌ Error archiving book:", err);
-    console.error("❌ Error stack:", err.stack);
-    res.status(500).json({ error: 'Error archiving book: ' + err.message });
+    console.error("❌ Archive route error:", err.message);
+    console.error("❌ Full error object:", err);
+    console.error("❌ Error name:", err.name);
+    
+    // Detailed logging for different error types
+    if (err.errors) {
+      console.error("❌ Mongoose validation errors:");
+      Object.keys(err.errors).forEach(field => {
+        console.error(`  - ${field}: ${err.errors[field].message}`);
+      });
+    }
+    
+    if (err.stack) {
+      console.error("❌ Stack trace:", err.stack);
+    }
+    
+    // Build detailed error message
+    let errorMsg = err.message || 'Unknown error';
+    if (err.errors) {
+      const validationErrors = Object.keys(err.errors).map(field => 
+        `${field}: ${err.errors[field].message}`
+      ).join('; ');
+      errorMsg = validationErrors;
+    }
+    
+    console.error("❌ Final error message:", errorMsg);
+    
+    res.status(500).json({ 
+      error: errorMsg,
+      type: err.name,
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
@@ -801,11 +940,38 @@ router.get('/borrowed', async (req, res) => {
 // Get all archived books
 router.get('/archived/all', async (req, res) => {
   try {
-    const archivedBooks = await ArchivedBook.find();
+    console.log("📚 Fetching all archived books...");
+    const archivedBooks = await ArchivedBook.find().sort({ archivedAt: -1 });
+    console.log(`✅ Found ${archivedBooks.length} archived books`);
     res.status(200).json({ books: archivedBooks });
   } catch (err) {
-    console.error("Error fetching archived books:", err);
-    res.status(500).json({ error: "Error fetching archived books" });
+    console.error("❌ Error fetching archived books:", err);
+    res.status(500).json({ error: "Error fetching archived books: " + err.message });
+  }
+});
+
+// Delete an archived book permanently
+router.delete('/archived/:id', async (req, res) => {
+  try {
+    console.log("🗑️ Deleting archived book with ID:", req.params.id);
+    const deletedBook = await ArchivedBook.findByIdAndDelete(req.params.id);
+    
+    if (!deletedBook) {
+      console.log("❌ Archived book not found with ID:", req.params.id);
+      return res.status(404).json({ error: 'Archived book not found' });
+    }
+    
+    console.log("✅ Archived book deleted:", deletedBook.title);
+    res.status(200).json({ 
+      message: 'Archived book deleted successfully',
+      deletedBook: {
+        _id: deletedBook._id,
+        title: deletedBook.title
+      }
+    });
+  } catch (err) {
+    console.error("❌ Error deleting archived book:", err);
+    res.status(500).json({ error: 'Error deleting archived book: ' + err.message });
   }
 });
 
@@ -1009,20 +1175,29 @@ router.get('/diagnostic/images', async (req, res) => {
   }
 });
 
-// Admin endpoint to fix accession numbers for existing books
+// Admin endpoint to fix accession numbers for existing books using Counter model
 router.post('/admin/fix-accession-numbers', async (req, res) => {
   try {
+    // Reset the counter
+    await Counter.findOneAndUpdate(
+      { name: 'accessionNumber' },
+      { value: 0 },
+      { upsert: true }
+    );
+    
     // Get all books, sorted by creation date
     const books = await Book.find({}).sort({ createdAt: 1 });
     
     console.log(`📚 Fixing accession numbers for ${books.length} books`);
     
     let counter = 0;
+    const currentYear = new Date().getFullYear();
     const updatePromises = [];
     
     for (const book of books) {
       counter++;
-      const newAccessionNumber = String(counter).padStart(6, '0');
+      const sequenceNumber = String(counter).padStart(4, '0');
+      const newAccessionNumber = `${currentYear}-${sequenceNumber}`;
       updatePromises.push(
         Book.findByIdAndUpdate(book._id, { accessionNumber: newAccessionNumber })
       );
@@ -1030,11 +1205,18 @@ router.post('/admin/fix-accession-numbers', async (req, res) => {
     
     await Promise.all(updatePromises);
     
-    console.log("✅ Fixed accession numbers for", counter, "books");
+    // Update counter to reflect the fixed numbers
+    await Counter.findOneAndUpdate(
+      { name: 'accessionNumber' },
+      { value: counter }
+    );
+    
+    console.log("✅ Fixed accession numbers for", counter, "books in DDC format");
     
     res.json({
-      message: 'Accession numbers fixed successfully',
-      booksFixed: counter
+      message: 'Accession numbers fixed successfully in DDC format (YYYY-XXXX)',
+      booksFixed: counter,
+      format: `${currentYear}-0001 to ${currentYear}-${String(counter).padStart(4, '0')}`
     });
   } catch (err) {
     console.error('❌ Error fixing accession numbers:', err);

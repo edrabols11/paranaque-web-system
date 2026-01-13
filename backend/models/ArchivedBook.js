@@ -11,7 +11,7 @@ const archivedBookSchema = new mongoose.Schema({
     type: Number, 
     required: true,
     min: 1000,
-    max: new Date().getFullYear() + 10
+    max: new Date().getFullYear() + 50 // Allow some future dates
   },
   genre: { 
     type: String, 
@@ -19,48 +19,75 @@ const archivedBookSchema = new mongoose.Schema({
     trim: true,
     default: 'Unknown'
   },
-  author: { 
-    type: String, 
-    required: false,
-    trim: true,
-    default: 'Unknown Author'
-  },
-  publisher: { 
-    type: String, 
-    required: false,
-    trim: true,
-    default: 'Unknown Publisher'
-  },
-  category: { 
-    type: String, 
+  category: {
+    type: String,
     required: false,
     trim: true,
     default: 'Unknown Category'
   },
-  accessionNumber: { 
-    type: String, 
-    required: false,
-    default: null
-  },
-  callNumber: { 
-    type: String, 
-    required: false,
-    default: null
-  },
-  location: { 
-    type: Object, 
-    required: false,
-    default: null
-  },
-  status: { 
-    type: String, 
+  author: {
+    type: String,
     required: false,
     trim: true,
+    default: 'Unknown Author'
+  },
+  publisher: {
+    type: String,
+    required: false,
+    trim: true,
+    default: 'Unknown Publisher'
+  },
+  accessionNumber: {
+    type: String,
+    required: false,
+    default: null
+  },
+  callNumber: {
+    type: String,
+    required: false,
+    default: null
+  },
+  location: {
+    genreCode: { type: String, required: false },
+    shelf: { type: Number, required: false },
+    level: { type: Number, required: false },
+  },
+  status: {
+    type: String,
+    required: false,
     default: 'Archived'
+  },
+  originalBookId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: false
   },
   image: { 
     type: String, 
     default: null 
+  },
+  accessionNumber: {
+    type: String,
+    required: false,
+    trim: true
+  },
+  callNumber: {
+    type: String,
+    required: false,
+    trim: true
+  },
+  location: {
+    genreCode: { type: String, required: false },
+    shelf: { type: Number, required: false },
+    level: { type: Number, required: false },
+  },
+  status: {
+    type: String,
+    required: false,
+    default: 'Archived'
+  },
+  originalBookId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: false
   },
   
   // Historical data from when it was active

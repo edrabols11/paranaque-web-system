@@ -79,15 +79,17 @@ const BooksTable = () => {
           body: JSON.stringify({ status: "Archived" }),
         });
         const data = await res.json();
-        console.log("Archive response status:", res.status, "Data:", data);
+        console.log("Archive response status:", res.status, "Full Data:", data);
         
         if (res.ok) {
           alert("Book archived successfully!");
           const updatedList = books.filter((book) => book._id !== bookId);
           setBooks(updatedList);
         } else {
-          console.error("❌ Archive failed:", data.error);
-          alert("Failed to archive book: " + (data.error || "Unknown error"));
+          console.error("❌ Archive failed - Full response:", data);
+          const errorMsg = data.error || data.message || 'Unknown error';
+          const errorDetails = data.details ? `\nDetails: ${data.details}` : '';
+          alert(`Failed to archive book:\n${errorMsg}${errorDetails}`);
         }
       } catch (err) {
         console.error("❌ Error archiving book:", err);
