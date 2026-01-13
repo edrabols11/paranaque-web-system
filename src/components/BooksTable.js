@@ -17,17 +17,17 @@ const BooksTable = () => {
   }, [showAddBookModal]);
 
   useEffect(() => {
-    console.log("📚 BooksTable mounted, fetching books");
-    fetchReservedBooks();
+    console.log("📚 BooksTable mounted, fetching all books");
+    fetchAllBooks();
   }, []);
 
-  const fetchReservedBooks = async () => {
+  const fetchAllBooks = async () => {
     try {
       setLoading(true);
-      console.log("📖 Starting fetch of books...");
+      console.log("📖 Starting fetch of all books...");
       const timestamp = new Date().getTime();
       const url = `https://paranaledge-y7z1.onrender.com/api/books/?limit=10000&_t=${timestamp}`;
-      console.log("📖 Fetching from URL:", url);
+      console.log("📖 Fetching all books from URL:", url);
       
       const response = await fetch(url);
       console.log("📖 Response status:", response.status, response.statusText);
@@ -184,7 +184,7 @@ const BooksTable = () => {
           <button onClick={exportToExcel} className="um-btn um-edit" style={{ paddingTop: "10px", paddingBottom: "10px" }} title="Export to Excel" type="button">
             📥 Export
           </button>
-          <button onClick={fetchReservedBooks} className="um-btn um-edit" style={{ paddingTop: "10px", paddingBottom: "10px" }} title="Refresh" type="button">
+          <button onClick={fetchAllBooks} className="um-btn um-edit" style={{ paddingTop: "10px", paddingBottom: "10px" }} title="Refresh" type="button">
             🔄 Refresh
           </button>
         </div>
@@ -194,7 +194,7 @@ const BooksTable = () => {
       {!error && books.length === 0 ? (
         <div className="empty-state">
           <img src="/imgs/empty.png" alt="No Data" className="empty-img" />
-          <p>No reserved books found.</p>
+          <p>No books found. Click "Add Books" to add your first book.</p>
         </div>
       ) : (
         <div className="table-wrapper">
@@ -301,7 +301,7 @@ const BooksTable = () => {
                     onBookAdded={() => { 
                       console.log("📖 Book added, closing modal"); 
                       setShowAddBookModal(false);
-                      fetchReservedBooks();
+                      fetchAllBooks();
                     }} 
                   />
                 </div>
