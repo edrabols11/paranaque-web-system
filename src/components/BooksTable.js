@@ -264,23 +264,23 @@ const BooksTable = () => {
           {/* Add Book Modal */}
           {showAddBookModal && (
             <div 
-              className="modal-overlay" 
+              className="add-book-modal-overlay" 
               onClick={() => setShowAddBookModal(false)}
-              style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}
+              style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}
             >
               <div 
-                className="modal-content" 
+                className="add-book-modal-content" 
                 onClick={e => e.stopPropagation()} 
-                style={{ maxWidth: 600, width: '95%', height: '90%', padding: '10px', background: '#fff', borderRadius: '10px', position: 'relative', zIndex: 1001, overflowY: 'auto' }}
+                style={{ maxWidth: 600, width: '95%', height: '90%', padding: '10px', background: '#fff', borderRadius: '10px', position: 'relative', zIndex: 10000, overflowY: 'auto', boxShadow: '0 4px 24px rgba(0,0,0,0.3)' }}
               >
                 <button
                   onClick={() => setShowAddBookModal(false)}
-                  style={{ position: 'absolute', top: 10, right: 16, background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', zIndex: 1002 }}
+                  style={{ position: 'absolute', top: 10, right: 16, background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', zIndex: 10001, padding: '0' }}
                   aria-label="Close"
                 >
                   ×
                 </button>
-                <AddBook onBookAdded={() => { setShowAddBookModal(false); }} />
+                <AddBook onBookAdded={() => { console.log("📖 Book added, closing modal"); setShowAddBookModal(false); }} />
               </div>
             </div>
           )}

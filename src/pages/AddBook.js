@@ -320,21 +320,21 @@ const Select = ({ label, name, value, onChange, options, required = false }) => 
 );
 
 const styles = {
-  container: { display: "flex", flexDirection: "column", alignItems: "center", padding: "30px", minHeight: "90vh" },
+  container: { display: "flex", flexDirection: "column", alignItems: "center", padding: "30px", minHeight: "100%", width: "100%", visibility: "visible", opacity: 1 },
   logo: { width: "100px", marginBottom: "15px" },
   title: { fontWeight: "700", marginBottom: "20px" },
   form: { width: "100%", maxWidth: "450px" },
   row: { display: "flex", justifyContent: "space-between", gap: "10px" },
   inputGroup: { marginBottom: "15px", width: "104%" },
   label: { display: "block", marginBottom: "6px", fontWeight: "600" },
-  input: { width: "100%", padding: "8px", borderRadius: "5px", border: "1px solid #ccc" },
+  input: { width: "100%", padding: "8px", borderRadius: "5px", border: "1px solid #ccc", visibility: "visible" },
   preview: { width: "100%", marginTop: "10px", borderRadius: "5px" },
-  submitBtn: { width: "100%", padding: "12px", backgroundColor: "#1dbf73", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "600", pointerEvents: "auto" },
-  addCategoryBtn: { width: "104%", padding: "10px", backgroundColor: "#17a2b8", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "600", marginTop: "-10px", marginBottom: "15px", pointerEvents: "auto" },
-  cancelBtn: { flex: 1, padding: "12px", backgroundColor: "#6c757d", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "600", pointerEvents: "auto" },
-  modalOverlay: { position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 2000 },
-  modal: { background: "#fff", padding: "30px", borderRadius: "8px", textAlign: "center", width: "300px", zIndex: 2001, maxHeight: "90vh", overflowY: "auto" },
-  closeModalBtn: { marginTop: "15px", padding: "8px 15px", background: "#1dbf73", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer", pointerEvents: "auto" }
+  submitBtn: { width: "100%", padding: "12px", backgroundColor: "#1dbf73", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "600", pointerEvents: "auto", visibility: "visible" },
+  addCategoryBtn: { width: "104%", padding: "10px", backgroundColor: "#17a2b8", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "600", marginTop: "-10px", marginBottom: "15px", pointerEvents: "auto", visibility: "visible" },
+  cancelBtn: { flex: 1, padding: "12px", backgroundColor: "#6c757d", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "600", pointerEvents: "auto", visibility: "visible" },
+  modalOverlay: { position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 2000, visibility: "visible" },
+  modal: { background: "#fff", padding: "30px", borderRadius: "8px", textAlign: "center", width: "300px", zIndex: 2001, maxHeight: "90vh", overflowY: "auto", visibility: "visible" },
+  closeModalBtn: { marginTop: "15px", padding: "8px 15px", background: "#1dbf73", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer", pointerEvents: "auto", visibility: "visible" }
 };
 
 export default AddBook;
