@@ -17,19 +17,14 @@ const getNextAccessionNumber = async () => {
   try {
     console.log("🔢 Starting accession number generation...");
     
-    // Get or create counter for accession numbers
-    let counter = await Counter.findOne({ name: 'accessionNumber' });
+    // Use findByIdAndUpdate for atomic increment to avoid race conditions
+    let counter = await Counter.findOneAndUpdate(
+      { name: 'accessionNumber' },
+      { $inc: { value: 1 } },
+      { new: true, upsert: true }
+    );
     
-    if (!counter) {
-      console.log("📊 Counter not found, initializing...");
-      counter = new Counter({ name: 'accessionNumber', value: 0 });
-      await counter.save();
-    }
-    
-    // Increment the counter
-    counter.value += 1;
-    await counter.save();
-    
+    console.log("📈 Counter after increment:", counter);
     console.log("📈 Next counter value:", counter.value);
     
     // Format as DDC-style accession number: YYYY-XXXX (Year-Sequence)
