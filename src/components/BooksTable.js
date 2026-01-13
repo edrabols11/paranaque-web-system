@@ -316,9 +316,9 @@ const BooksTable = () => {
       )}
 
       {/* Edit Book Modal */}
-          {editingBook && (
-            <div className="modal-overlay" onClick={cancelEdit}>
-              <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 600, width: '95%', height: '90%', padding: '20px', background: '#fff', borderRadius: '10px', position: 'relative', overflowY: 'auto' }}>
+      {editingBook && (
+        <div className="modal-overlay" onClick={cancelEdit}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 600, width: '95%', height: '90%', padding: '20px', background: '#fff', borderRadius: '10px', position: 'relative', overflowY: 'auto' }}>
                 <button
                   onClick={cancelEdit}
                   style={{ position: 'absolute', top: 10, right: 16, background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}
@@ -533,8 +533,6 @@ const BooksTable = () => {
               </div>
             </div>
           )}
-        </div>
-      )}
     </div>
   );
 };
