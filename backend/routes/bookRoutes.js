@@ -243,31 +243,38 @@ router.put('/archive/:id', async (req, res) => {
     if (req.body.status === 'Archived') {
       console.log("🗂️  Archiving book:", book.title);
       // Create archived book record
-      const archivedBook = new ArchivedBook({
-        title: book.title,
-        year: book.year,
-        author: book.author,
-        publisher: book.publisher,
-        category: book.category,
-        genre: book.category || book.genre || 'Unknown', // Use category as fallback for genre
-        image: book.image,
-        accessionNumber: book.accessionNumber,
-        callNumber: book.callNumber,
-        location: book.location,
-        status: 'Archived'
-      });
+      try {
+        const archivedBook = new ArchivedBook({
+          title: book.title || 'Unknown Title',
+          year: book.year || new Date().getFullYear(),
+          author: book.author || 'Unknown Author',
+          publisher: book.publisher || 'Unknown Publisher',
+          category: book.category || 'Unknown Category',
+          genre: book.category || book.genre || 'Unknown', // Use category as fallback for genre
+          image: book.image || null,
+          accessionNumber: book.accessionNumber || null,
+          callNumber: book.callNumber || null,
+          location: book.location || null,
+          status: 'Archived'
+        });
 
-      await archivedBook.save();
-      console.log("✅ Archived book saved:", archivedBook._id);
+        console.log("🗂️  Archived book object before save:", archivedBook);
+        await archivedBook.save();
+        console.log("✅ Archived book saved:", archivedBook._id);
 
-      // Delete from regular books
-      await Book.findByIdAndDelete(req.params.id);
-      console.log("✅ Original book deleted from Books collection");
+        // Delete from regular books
+        await Book.findByIdAndDelete(req.params.id);
+        console.log("✅ Original book deleted from Books collection");
 
-      res.status(200).json({
-        message: 'Book archived successfully',
-        book: archivedBook,
-      });
+        res.status(200).json({
+          message: 'Book archived successfully',
+          book: archivedBook,
+        });
+      } catch (saveErr) {
+        console.error("❌ Error saving archived book:", saveErr);
+        console.error("❌ Validation errors:", saveErr.errors);
+        res.status(500).json({ error: 'Error archiving book: Validation failed - ' + saveErr.message });
+      }
     } else {
       // Regular status update
       book.status = req.body.status;
@@ -281,6 +288,7 @@ router.put('/archive/:id', async (req, res) => {
 
   } catch (err) {
     console.error("❌ Error archiving book:", err);
+    console.error("❌ Error stack:", err.stack);
     res.status(500).json({ error: 'Error archiving book: ' + err.message });
   }
 });
@@ -357,11 +365,16 @@ router.put('/archived/return/:id', async (req, res) => {
     const archivedBook = await ArchivedBook.findById(req.params.id);
     if (!archivedBook) return res.status(404).json({ error: 'Archived book not found' });
 
-    // Create new book in main collection
+    // Create new book in main collection with all archived data
     const book = new Book({
       title: archivedBook.title,
       year: archivedBook.year,
-      genre: archivedBook.genre,
+      author: archivedBook.author,
+      publisher: archivedBook.publisher,
+      category: archivedBook.category,
+      accessionNumber: archivedBook.accessionNumber,
+      callNumber: archivedBook.callNumber,
+      location: archivedBook.location,
       image: archivedBook.image,
       archived: false,
       borrowedAt: null,
@@ -369,7 +382,10 @@ router.put('/archived/return/:id', async (req, res) => {
       dueDate: null,
       reservedBy: null,
       reservedAt: null,
-      reserveUntil: null
+      reserveUntil: null,
+      status: 'Available',
+      stock: 1,
+      availableStock: 1
     });
 
     await book.save();

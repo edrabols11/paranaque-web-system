@@ -15,8 +15,48 @@ const archivedBookSchema = new mongoose.Schema({
   },
   genre: { 
     type: String, 
-    required: true,
-    trim: true
+    required: false,
+    trim: true,
+    default: 'Unknown'
+  },
+  author: { 
+    type: String, 
+    required: false,
+    trim: true,
+    default: 'Unknown Author'
+  },
+  publisher: { 
+    type: String, 
+    required: false,
+    trim: true,
+    default: 'Unknown Publisher'
+  },
+  category: { 
+    type: String, 
+    required: false,
+    trim: true,
+    default: 'Unknown Category'
+  },
+  accessionNumber: { 
+    type: String, 
+    required: false,
+    default: null
+  },
+  callNumber: { 
+    type: String, 
+    required: false,
+    default: null
+  },
+  location: { 
+    type: Object, 
+    required: false,
+    default: null
+  },
+  status: { 
+    type: String, 
+    required: false,
+    trim: true,
+    default: 'Archived'
   },
   image: { 
     type: String, 

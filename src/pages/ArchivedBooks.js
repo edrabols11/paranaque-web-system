@@ -16,7 +16,7 @@ const ArchivedBooks = () => {
   useEffect(() => {
     const fetchArchivedBooks = async () => {
       try {
-        const res = await fetch('https://paranaledge-y7z1.onrender.com/api/books?status=Archived');
+        const res = await fetch('https://paranaledge-y7z1.onrender.com/api/books/archived/all');
         const data = await res.json();
         if (res.ok) {
           setArchivedBooks(data.books);
@@ -71,10 +71,9 @@ const ArchivedBooks = () => {
   const handleReturnToStocks = async (bookId) => {
     if (window.confirm("Are you sure you want to return this book to stocks?")) {
       try {
-        const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/books/archive/${bookId}`, {
+        const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/books/archived/return/${bookId}`, {
           method: 'PUT',
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: "Available" }),
         });
         const data = await res.json();
         if (res.ok) {
