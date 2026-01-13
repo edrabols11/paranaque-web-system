@@ -17,23 +17,29 @@ const getNextAccessionNumber = async () => {
   try {
     console.log("🔢 Starting accession number generation...");
     
-    // Use findOneAndUpdate for atomic increment to avoid race conditions
+    // Use atomic findOneAndUpdate with MongoDB's $inc operator
     const counter = await Counter.findOneAndUpdate(
       { name: 'accessionNumber' },
       { $inc: { value: 1 } },
-      { new: true, upsert: true, returnDocument: 'after' }
-    );
+      { 
+        new: true, 
+        upsert: true
+      }
+    ).maxTimeMS(5000); // Add timeout to prevent hanging
     
-    if (!counter || counter.value === undefined) {
-      throw new Error('Counter object invalid or missing value');
+    console.log("📈 Counter object:", counter);
+    
+    if (!counter) {
+      throw new Error('Counter returned null or undefined');
     }
     
-    console.log("📈 Counter value:", counter.value);
+    const counterValue = counter.value || 1;
+    console.log("📈 Counter value:", counterValue);
     
     // Format as DDC-style accession number: YYYY-XXXX (Year-Sequence)
     // Example: 2026-0001, 2026-0002, etc.
     const currentYear = new Date().getFullYear();
-    const sequenceNumber = String(counter.value).padStart(4, '0');
+    const sequenceNumber = String(counterValue).padStart(4, '0');
     const accessionNumber = `${currentYear}-${sequenceNumber}`;
     
     console.log(`✅ Generated accession number: ${accessionNumber}`);
@@ -41,12 +47,11 @@ const getNextAccessionNumber = async () => {
     return accessionNumber;
   } catch (err) {
     console.error('❌ Error in getNextAccessionNumber:', err.message);
-    console.error('❌ Stack:', err.stack);
     
-    // Fallback: use timestamp-based number if counting fails
+    // Fallback: use simple timestamp-based number
     const currentYear = new Date().getFullYear();
     const fallback = `${currentYear}-${String(Date.now()).slice(-4)}`;
-    console.log('⚠️  Using fallback accession number:', fallback);
+    console.log('⚠️  Using fallback accession number (Counter failed):', fallback);
     return fallback;
   }
 };
