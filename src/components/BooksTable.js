@@ -283,11 +283,13 @@ const BooksTable = () => {
               onClick={() => setShowAddBookModal(false)}
               style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 }}
             >
+              {console.log("🔵 Add Book Modal is rendering - OVERLAY VISIBLE")}
               <div 
                 className="add-book-modal-content" 
                 onClick={e => e.stopPropagation()} 
-                style={{ maxWidth: 600, width: '95%', height: '90%', padding: '10px', background: '#fff', borderRadius: '10px', position: 'relative', zIndex: 10000, overflowY: 'auto', boxShadow: '0 4px 24px rgba(0,0,0,0.3)' }}
+                style={{ maxWidth: 600, width: '95%', height: '90%', padding: '10px', background: '#fff', borderRadius: '10px', position: 'relative', zIndex: 10000, overflowY: 'auto', boxShadow: '0 4px 24px rgba(0,0,0,0.3)', border: '3px solid red' }}
               >
+                {console.log("🟢 Add Book Modal Content is rendering - MODAL BOX VISIBLE")}
                 <button
                   onClick={() => setShowAddBookModal(false)}
                   style={{ position: 'absolute', top: 10, right: 16, background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', zIndex: 10001, padding: '0' }}
@@ -296,7 +298,7 @@ const BooksTable = () => {
                   ×
                 </button>
                 <div style={{ visibility: 'visible', display: 'block' }}>
-                  {console.log("📖 Rendering AddBook component")}
+                  {console.log("📖 About to render AddBook component inside modal")}
                   <AddBook 
                     onBookAdded={() => { 
                       console.log("📖 Book added, closing modal"); 
@@ -304,6 +306,7 @@ const BooksTable = () => {
                       fetchAllBooks();
                     }} 
                   />
+                  {console.log("✅ AddBook component rendered inside modal")}
                 </div>
               </div>
             </div>
