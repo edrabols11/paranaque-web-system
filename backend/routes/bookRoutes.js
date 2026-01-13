@@ -1432,4 +1432,45 @@ router.post('/admin/fix-accession-numbers', async (req, res) => {
   }
 });
 
-module.exports = router;
+// Endpoint to assign accession numbers to books that don't have one
+router.post('/admin/assign-accession-numbers', async (req, res) => {
+  try {
+    console.log("🔢 Assigning accession numbers to books without them...");
+    
+    // Find all books without accession numbers
+    const booksWithoutAccession = await Book.find({ 
+      $or: [
+        { accessionNumber: null },
+        { accessionNumber: undefined },
+        { accessionNumber: '' }
+      ]
+    });
+    
+    console.log(`📚 Found ${booksWithoutAccession.length} books without accession numbers`);
+    
+    let assignedCount = 0;
+    for (const book of booksWithoutAccession) {
+      try {
+        const accessionNumber = await getNextAccessionNumber();
+        book.accessionNumber = accessionNumber;
+        await book.save();
+        assignedCount++;
+        console.log(`✅ Assigned ${accessionNumber} to ${book.title}`);
+      } catch (err) {
+        console.error(`❌ Failed to assign accession number to ${book.title}:`, err.message);
+      }
+    }
+    
+    console.log(`✅ Successfully assigned accession numbers to ${assignedCount} books`);
+    
+    res.json({
+      message: 'Accession numbers assigned successfully',
+      booksUpdated: assignedCount,
+      totalBooksWithoutAccession: booksWithoutAccession.length
+    });
+  } catch (err) {
+    console.error('❌ Error assigning accession numbers:', err);
+    res.status(500).json({ error: 'Failed to assign accession numbers: ' + err.message });
+  }
+});
+
