@@ -75,6 +75,23 @@ router.post('/', async (req, res) => {
     console.log("🔵 POST /api/books called");
     console.log("📝 Request body:", req.body);
     const { title, year, image, userEmail, location, author, publisher, callNumber, category, stock } = req.body;
+    
+    // Validate required fields
+    console.log("🔍 Validating required fields...");
+    if (!title) {
+      return res.status(400).json({ error: 'Title is required' });
+    }
+    if (!year) {
+      return res.status(400).json({ error: 'Year is required' });
+    }
+    if (isNaN(parseInt(year))) {
+      return res.status(400).json({ error: 'Year must be a valid number' });
+    }
+    if (!stock) {
+      return res.status(400).json({ error: 'Stock is required' });
+    }
+    console.log("✅ All required fields present");
+    
     let imageField = null;
 
     // If image is a base64 string, store it directly
@@ -146,8 +163,24 @@ router.post('/', async (req, res) => {
 
     res.status(201).json({ message: 'Book added successfully!', book: newBook });
   } catch (err) {
-    console.error("❌ Error adding book:", err);
-    res.status(500).json({ error: 'Server error while adding book: ' + err.message });
+    console.error("❌ Error adding book - Full Error Object:", err);
+    console.error("❌ Error message:", err.message);
+    console.error("❌ Error stack:", err.stack);
+    
+    // Provide detailed error information
+    let errorMsg = err.message;
+    if (err.errors) {
+      // Mongoose validation errors
+      console.error("❌ Mongoose validation errors:", err.errors);
+      errorMsg = Object.keys(err.errors).map(key => {
+        return `${key}: ${err.errors[key].message}`;
+      }).join('; ');
+    }
+    
+    res.status(500).json({ 
+      error: 'Server error while adding book: ' + errorMsg,
+      details: process.env.NODE_ENV === 'development' ? err.toString() : undefined
+    });
   }
 });
 
