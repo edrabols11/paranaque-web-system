@@ -217,6 +217,26 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Test endpoint - SIMPLE GET to verify accession number generation works
+router.get("/test-accession", async (req, res) => {
+  try {
+    console.log("🧪 TEST: Generating accession number...");
+    const accession = await getNextAccessionNumber();
+    console.log("🧪 Generated:", accession);
+    
+    res.json({
+      success: true,
+      accessionNumber: accession
+    });
+  } catch (err) {
+    console.error("❌ TEST ERROR:", err);
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
 router.get("/", async (req, res) => {
   const { genre, status } = req.query;
   console.log("📚 api/books - GET called with genre:", genre, "status:", status);
@@ -320,28 +340,6 @@ router.get("/", async (req, res) => {
     console.error("❌ Error fetching books:", err.message);
     console.error("❌ Full error:", err);
     res.status(500).json({ error: "Error fetching books: " + err.message });
-  }
-});
-
-// Test endpoint to verify accession number generation
-router.get("/test/accession-number", async (req, res) => {
-  try {
-    console.log("🧪 Testing accession number generation...");
-    const accession = await getNextAccessionNumber();
-    
-    res.json({
-      success: true,
-      message: "Accession number generated successfully",
-      generatedNumber: accession,
-      timestamp: new Date().toISOString()
-    });
-  } catch (err) {
-    console.error("❌ Error in test endpoint:", err);
-    res.status(500).json({
-      success: false,
-      error: err.message,
-      timestamp: new Date().toISOString()
-    });
   }
 });
 
