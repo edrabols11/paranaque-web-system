@@ -217,6 +217,11 @@ router.post('/', async (req, res) => {
   }
 });
 
+// Simple test endpoint
+router.get("/simple-test", (req, res) => {
+  res.json({ message: "✅ bookRoutes is loaded and working!" });
+});
+
 // Test endpoint - SIMPLE GET to verify accession number generation works
 router.get("/test-accession", async (req, res) => {
   try {
