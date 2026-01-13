@@ -323,6 +323,27 @@ router.get("/", async (req, res) => {
   }
 });
 
+// Test endpoint to verify accession number generation
+router.get("/test/accession-number", async (req, res) => {
+  try {
+    console.log("🧪 Testing accession number generation...");
+    const accession = await getNextAccessionNumber();
+    
+    res.json({
+      success: true,
+      message: "Accession number generated successfully",
+      generatedNumber: accession,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error("❌ Error in test endpoint:", err);
+    res.status(500).json({
+      success: false,
+      error: err.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
 
 router.put('/archive/:id', async (req, res) => {
   console.log("PUT /archive/:id called with ID:", req.params.id, "Body:", req.body);
