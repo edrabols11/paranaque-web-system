@@ -326,12 +326,21 @@ router.put('/archive/:id', async (req, res) => {
     } else {
       yearValue = parseInt(yearValue);
       // Ensure year is within valid range
-      if (yearValue < 1000) yearValue = 1000;
-      if (yearValue > new Date().getFullYear() + 50) yearValue = new Date().getFullYear();
+      if (yearValue < 1000) {
+        console.warn("⚠️ Year too low, setting to 1000");
+        yearValue = 1000;
+      }
+      if (yearValue > new Date().getFullYear() + 50) {
+        console.warn("⚠️ Year too high, setting to current year");
+        yearValue = new Date().getFullYear();
+      }
     }
     
+    // Validate title
+    const titleValue = (book.title && book.title.trim()) ? book.title : `Book ${book._id.toString().slice(-6)}`;
+    
     console.log("📋 Archive data:");
-    console.log("  - Title:", book.title, "(type:", typeof book.title + ")");
+    console.log("  - Title:", titleValue, "(type:", typeof titleValue + ")");
     console.log("  - Year:", yearValue, "(type:", typeof yearValue + ")");
     console.log("  - Genre:", genreValue, "(type:", typeof genreValue + ")");
     console.log("  - Author:", book.author || 'Unknown');
@@ -344,7 +353,7 @@ router.put('/archive/:id', async (req, res) => {
     
     // Create archived book
     const archivedBook = new ArchivedBook({
-      title: book.title,
+      title: titleValue,
       year: yearValue,
       author: book.author || 'Unknown',
       publisher: book.publisher || '',
@@ -432,6 +441,121 @@ router.put('/archive/:id', async (req, res) => {
   }
 });
 
+
+// Diagnostic endpoint to check books with missing required fields
+router.get('/diagnostic/missing-fields', async (req, res) => {
+  try {
+    console.log("🔍 Checking for books with missing required fields...");
+    
+    const books = await Book.find({});
+    const issuesFound = [];
+    
+    books.forEach(book => {
+      const issues = [];
+      
+      if (!book.title || book.title.trim() === '') {
+        issues.push('missing title');
+      }
+      
+      if (!book.year || isNaN(book.year) || book.year < 1000 || book.year > new Date().getFullYear() + 50) {
+        issues.push(`invalid year: ${book.year}`);
+      }
+      
+      if (!book.category && !book.genre) {
+        issues.push('missing category/genre');
+      }
+      
+      if (issues.length > 0) {
+        issuesFound.push({
+          _id: book._id,
+          title: book.title || 'NO TITLE',
+          year: book.year,
+          category: book.category,
+          genre: book.genre,
+          issues
+        });
+      }
+    });
+    
+    console.log(`✅ Found ${issuesFound.length} books with issues out of ${books.length} total`);
+    
+    res.status(200).json({
+      totalBooks: books.length,
+      booksWithIssues: issuesFound.length,
+      issues: issuesFound
+    });
+  } catch (err) {
+    console.error('❌ Diagnostic error:', err);
+    res.status(500).json({ error: 'Diagnostic error: ' + err.message });
+  }
+});
+
+// Admin endpoint to fix books with missing required data
+router.post('/admin/fix-missing-fields', async (req, res) => {
+  try {
+    console.log("🔧 Starting repair of books with missing fields...");
+    
+    const books = await Book.find({});
+    let fixedCount = 0;
+    const failures = [];
+    
+    for (const book of books) {
+      let needsUpdate = false;
+      
+      // Fix missing/invalid title
+      if (!book.title || book.title.trim() === '') {
+        console.warn(`⚠️ Book ${book._id} has no title, using ID as title`);
+        book.title = `Book ${book._id.toString().slice(-6)}`;
+        needsUpdate = true;
+      }
+      
+      // Fix missing/invalid year
+      if (!book.year || isNaN(book.year) || book.year < 1000 || book.year > new Date().getFullYear() + 50) {
+        const oldYear = book.year;
+        book.year = new Date().getFullYear();
+        console.warn(`⚠️ Book "${book.title}" had invalid year ${oldYear}, set to ${book.year}`);
+        needsUpdate = true;
+      }
+      
+      // Fix missing category/genre
+      if (!book.category && !book.genre) {
+        book.category = 'General';
+        book.genre = 'General';
+        console.warn(`⚠️ Book "${book.title}" had no category, set to General`);
+        needsUpdate = true;
+      }
+      
+      // Ensure stock values
+      if (!book.stock || book.stock < 1) {
+        book.stock = 1;
+        needsUpdate = true;
+      }
+      
+      if (book.availableStock === undefined || book.availableStock === null) {
+        book.availableStock = book.stock;
+        needsUpdate = true;
+      }
+      
+      if (needsUpdate) {
+        await book.save();
+        fixedCount++;
+        console.log(`✅ Fixed book: ${book.title}`);
+      }
+    }
+    
+    console.log(`✅ Repair complete. Fixed ${fixedCount} books`);
+    
+    res.status(200).json({
+      message: 'Books repaired successfully',
+      totalBooks: books.length,
+      booksFixed: fixedCount,
+      failures
+    });
+  } catch (err) {
+    console.error('❌ Repair error:', err);
+    res.status(500).json({ error: 'Repair error: ' + err.message });
+  }
+});
 
 // Return book
 router.put('/return/:id', async (req, res) => {
