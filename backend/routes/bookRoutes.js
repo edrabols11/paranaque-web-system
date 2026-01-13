@@ -17,15 +17,18 @@ const getNextAccessionNumber = async () => {
   try {
     console.log("🔢 Starting accession number generation...");
     
-    // Use findByIdAndUpdate for atomic increment to avoid race conditions
-    let counter = await Counter.findOneAndUpdate(
+    // Use findOneAndUpdate for atomic increment to avoid race conditions
+    const counter = await Counter.findOneAndUpdate(
       { name: 'accessionNumber' },
       { $inc: { value: 1 } },
-      { new: true, upsert: true }
+      { new: true, upsert: true, returnDocument: 'after' }
     );
     
-    console.log("📈 Counter after increment:", counter);
-    console.log("📈 Next counter value:", counter.value);
+    if (!counter || counter.value === undefined) {
+      throw new Error('Counter object invalid or missing value');
+    }
+    
+    console.log("📈 Counter value:", counter.value);
     
     // Format as DDC-style accession number: YYYY-XXXX (Year-Sequence)
     // Example: 2026-0001, 2026-0002, etc.
@@ -99,8 +102,15 @@ router.post('/', async (req, res) => {
 
     // Auto-generate accession number
     console.log("📚 Generating accession number for:", title);
-    const generatedAccessionNumber = await getNextAccessionNumber();
-    console.log("📚 Generated accession number:", generatedAccessionNumber);
+    let generatedAccessionNumber;
+    try {
+      generatedAccessionNumber = await getNextAccessionNumber();
+      console.log("📚 Generated accession number:", generatedAccessionNumber);
+    } catch (accessionErr) {
+      console.error("❌ Failed to generate accession number:", accessionErr.message);
+      generatedAccessionNumber = `${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`;
+      console.log("⚠️ Using fallback accession:", generatedAccessionNumber);
+    }
 
     const newBook = new Book({
       title,
@@ -118,6 +128,8 @@ router.post('/', async (req, res) => {
       availableStock: parseInt(stock) || 1,
       status: 'available'
     });
+    
+    console.log("💾 Saving book to database...");
     await newBook.save();
     console.log("✅ Book saved with accession number:", newBook.accessionNumber);
 
