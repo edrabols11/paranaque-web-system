@@ -1567,5 +1567,23 @@ router.post('/admin/fix-all-accessions', async (req, res) => {
   }
 });
 
+// Ultra-simple endpoint - just assign numbers to all books in order
+router.get("/quick-fix-accessions", async (req, res) => {
+  try {
+    const allBooks = await Book.find().sort({ createdAt: 1 });
+    const year = new Date().getFullYear();
+    
+    for (let i = 0; i < allBooks.length; i++) {
+      const num = i + 1;
+      allBooks[i].accessionNumber = `${year}-${String(num).padStart(4, '0')}`;
+      await allBooks[i].save();
+    }
+    
+    res.json({ success: true, updated: allBooks.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
 
