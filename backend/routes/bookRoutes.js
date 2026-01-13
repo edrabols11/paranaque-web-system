@@ -372,9 +372,22 @@ router.put('/archive/:id', async (req, res) => {
       stack: err.stack,
       mongooseError: err.errors ? Object.keys(err.errors) : 'none'
     });
+    
+    // Extract validation errors if any
+    let errorMsg = err.message;
+    if (err.errors) {
+      const validationErrors = Object.keys(err.errors).map(field => 
+        `${field}: ${err.errors[field].message}`
+      ).join('; ');
+      errorMsg = `Validation failed: ${validationErrors}`;
+    }
+    
     res.status(500).json({ 
-      error: 'Error archiving book: ' + err.message,
-      details: process.env.NODE_ENV === 'development' ? err.toString() : undefined
+      error: errorMsg,
+      details: process.env.NODE_ENV === 'development' ? {
+        type: err.constructor.name,
+        stack: err.stack
+      } : undefined
     });
   }
 });

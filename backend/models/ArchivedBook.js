@@ -18,9 +18,48 @@ const archivedBookSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  category: {
+    type: String,
+    required: false,
+    trim: true
+  },
+  author: {
+    type: String,
+    required: false,
+    trim: true
+  },
+  publisher: {
+    type: String,
+    required: false,
+    trim: true
+  },
   image: { 
     type: String, 
     default: null 
+  },
+  accessionNumber: {
+    type: String,
+    required: false,
+    trim: true
+  },
+  callNumber: {
+    type: String,
+    required: false,
+    trim: true
+  },
+  location: {
+    genreCode: { type: String, required: false },
+    shelf: { type: Number, required: false },
+    level: { type: Number, required: false },
+  },
+  status: {
+    type: String,
+    required: false,
+    default: 'Archived'
+  },
+  originalBookId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: false
   },
   
   // Historical data from when it was active
