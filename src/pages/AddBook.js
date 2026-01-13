@@ -84,16 +84,61 @@ const AddBook = ({ onBookAdded }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    console.log("📝 Form submitted with data:", {
+      title: book.title,
+      author: book.author,
+      year: book.year,
+      category: book.category,
+      stock: book.stock,
+      shelf: book.location.shelf,
+      level: book.location.level
+    });
+    
     // Validate required fields
-    if (!book.title || !book.author || !book.year || !book.category || !book.stock || !book.location.shelf || !book.location.level) {
-      alert("Please fill in all required fields");
+    if (!book.title || !book.title.trim()) {
+      alert("Book title is required");
+      return;
+    }
+    
+    if (!book.author || !book.author.trim()) {
+      alert("Author is required");
+      return;
+    }
+    
+    if (!book.year || isNaN(book.year) || book.year < 1000 || book.year > new Date().getFullYear() + 10) {
+      alert("Please enter a valid year (between 1000 and " + (new Date().getFullYear() + 10) + ")");
+      return;
+    }
+    
+    if (!book.category) {
+      alert("Please select a category");
+      return;
+    }
+    
+    if (!book.stock || isNaN(book.stock) || book.stock < 1) {
+      alert("Please enter a valid stock number (minimum 1)");
+      return;
+    }
+    
+    if (book.location.shelf === '' || isNaN(book.location.shelf)) {
+      alert("Please enter a shelf number");
+      return;
+    }
+    
+    if (book.location.level === '' || isNaN(book.location.level)) {
+      alert("Please enter a shelf level");
       return;
     }
 
     setLoading(true);
+    console.log("🔄 Starting book submission...");
 
     const payload = {
-      ...book,
+      title: book.title,
+      year: parseInt(book.year),
+      author: book.author,
+      publisher: book.publisher || "Unknown",
+      category: book.category,
       stock: parseInt(book.stock) || 1,
       callNumber: book.callNumber,
       location: {
@@ -101,7 +146,8 @@ const AddBook = ({ onBookAdded }) => {
         shelf: parseInt(book.location.shelf),
         level: parseInt(book.location.level)
       },
-      image: base64Image
+      image: base64Image,
+      userEmail: localStorage.getItem('userEmail') || 'admin'
     };
 
     console.log("📤 Submitting book with image:", {
@@ -164,7 +210,7 @@ const AddBook = ({ onBookAdded }) => {
 
         <Input label="Author" name="author" value={book.author} onChange={handleChange} required />
 
-        <Input label="Publisher" name="publisher" value={book.publisher} onChange={handleChange} required />
+        <Input label="Publisher (Optional)" name="publisher" value={book.publisher} onChange={handleChange} />
 
         <Input label="Year Published" type="number" name="year" value={book.year} onChange={handleChange} required />
 
