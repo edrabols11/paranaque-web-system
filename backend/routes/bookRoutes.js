@@ -1475,5 +1475,49 @@ router.post('/admin/assign-accession-numbers', async (req, res) => {
   }
 });
 
+// Endpoint to fix all books and assign accession numbers in order
+router.post('/admin/fix-all-accessions', async (req, res) => {
+  try {
+    console.log("🔧 Fixing all books - assigning sequential accession numbers...");
+    
+    // Get all books sorted by creation date (oldest first)
+    const allBooks = await Book.find()
+      .sort({ createdAt: 1 })
+      .exec();
+    
+    console.log(`📚 Found ${allBooks.length} total books`);
+    
+    const currentYear = new Date().getFullYear();
+    let sequenceCounter = 0;
+    let updatedCount = 0;
+    
+    for (const book of allBooks) {
+      sequenceCounter++;
+      const accessionNumber = `${currentYear}-${String(sequenceCounter).padStart(4, '0')}`;
+      book.accessionNumber = accessionNumber;
+      
+      try {
+        await book.save();
+        console.log(`✅ Updated ${book.title} with accession: ${accessionNumber}`);
+        updatedCount++;
+      } catch (err) {
+        console.error(`❌ Failed to update ${book.title}:`, err.message);
+      }
+    }
+    
+    console.log(`✅ Fixed accession numbers for ${updatedCount}/${allBooks.length} books`);
+    
+    res.json({
+      message: 'All books have been assigned sequential accession numbers',
+      totalBooks: allBooks.length,
+      booksUpdated: updatedCount,
+      format: `${currentYear}-0001 to ${currentYear}-${String(sequenceCounter).padStart(4, '0')}`
+    });
+  } catch (err) {
+    console.error('❌ Error fixing all accession numbers:', err);
+    res.status(500).json({ error: 'Failed to fix accession numbers: ' + err.message });
+  }
+});
+
 module.exports = router;
 
