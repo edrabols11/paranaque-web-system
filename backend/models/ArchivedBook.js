@@ -15,8 +15,9 @@ const archivedBookSchema = new mongoose.Schema({
   },
   genre: { 
     type: String, 
-    required: true,
-    trim: true
+    required: false,
+    trim: true,
+    default: 'Unknown'
   },
   category: {
     type: String,

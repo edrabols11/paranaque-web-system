@@ -307,22 +307,26 @@ router.put('/archive/:id', async (req, res) => {
       
       try {
         // Create archived book record
-        // ⚠️ IMPORTANT: genre is REQUIRED in ArchivedBook model
+        // ⚠️ Ensure proper type conversion for validation
         const genreValue = book.category || book.genre || 'Unknown';
+        const yearValue = book.year ? parseInt(book.year) : new Date().getFullYear();
         
-        console.log("📋 Creating archived book with genre:", genreValue);
+        console.log("📋 Creating archived book:");
+        console.log("  - Title:", book.title);
+        console.log("  - Year:", yearValue, "(type:", typeof yearValue + ")");
+        console.log("  - Genre:", genreValue);
         
         const archivedBook = new ArchivedBook({
           title: book.title,
-          year: book.year,
-          author: book.author,
-          publisher: book.publisher,
-          category: book.category,
-          genre: genreValue, // REQUIRED - use category as fallback
-          image: book.image,
-          accessionNumber: book.accessionNumber,
-          callNumber: book.callNumber,
-          location: book.location,
+          year: yearValue, // Ensure it's a number
+          author: book.author || 'Unknown',
+          publisher: book.publisher || '',
+          category: book.category || '',
+          genre: genreValue,
+          image: book.image || null,
+          accessionNumber: book.accessionNumber || '',
+          callNumber: book.callNumber || '',
+          location: book.location || {},
           status: 'Archived',
           archivedAt: new Date(),
           originalBookId: book._id
@@ -335,14 +339,19 @@ router.put('/archive/:id', async (req, res) => {
         // Delete from regular books
         console.log("🗑️ Deleting original book from Books collection...");
         const deletedBook = await Book.findByIdAndDelete(bookId);
-        console.log("✅ Original book deleted:", deletedBook ? deletedBook.title : 'failed to delete');
+        console.log("✅ Original book deleted:", deletedBook ? deletedBook.title : 'Book not found for deletion');
 
         // Log the archive action
-        await new Log({
-          userEmail: req.body.userEmail || 'admin',
-          action: `Archived book: ${book.title} (Accession: ${book.accessionNumber})`
-        }).save();
-        console.log("📝 Archive logged");
+        try {
+          await new Log({
+            userEmail: req.body.userEmail || 'admin',
+            action: `Archived book: ${book.title} (Accession: ${book.accessionNumber})`
+          }).save();
+          console.log("📝 Archive logged");
+        } catch (logErr) {
+          console.warn("⚠️ Warning: Failed to log archive action:", logErr.message);
+          // Don't fail the archive if logging fails
+        }
 
         res.status(200).json({
           message: 'Book archived successfully',
@@ -350,7 +359,12 @@ router.put('/archive/:id', async (req, res) => {
         });
       } catch (saveErr) {
         console.error("❌ Error saving archived book:", saveErr.message);
-        console.error("❌ Validation errors:", saveErr.errors);
+        console.error("❌ Full error object:", saveErr);
+        if (saveErr.errors) {
+          console.error("❌ Validation errors:", Object.keys(saveErr.errors).map(k => 
+            `${k}: ${saveErr.errors[k].message}`
+          ).join('; '));
+        }
         throw saveErr;
       }
     } else {
