@@ -290,45 +290,72 @@ router.put('/archive/:id', async (req, res) => {
   console.log("PUT /archive/:id called with ID:", req.params.id, "Body:", req.body);
 
   try {
-    const book = await Book.findById(req.params.id);
+    const bookId = req.params.id;
+    console.log("🔍 Looking for book with ID:", bookId);
+    
+    const book = await Book.findById(bookId);
     console.log("📚 Book found:", book ? `${book.title} (${book._id})` : 'NOT FOUND');
 
     if (!book) {
-      console.log("❌ Book not found with ID:", req.params.id);
+      console.log("❌ Book not found with ID:", bookId);
       return res.status(404).json({ error: 'Book not found' });
     }
 
     // If archiving the book
     if (req.body.status === 'Archived') {
       console.log("🗂️  Archiving book:", book.title);
-      // Create archived book record
-      const archivedBook = new ArchivedBook({
-        title: book.title,
-        year: book.year,
-        author: book.author,
-        publisher: book.publisher,
-        category: book.category,
-        genre: book.category || book.genre || 'Unknown', // Use category as fallback for genre
-        image: book.image,
-        accessionNumber: book.accessionNumber,
-        callNumber: book.callNumber,
-        location: book.location,
-        status: 'Archived'
-      });
+      
+      try {
+        // Create archived book record
+        // ⚠️ IMPORTANT: genre is REQUIRED in ArchivedBook model
+        const genreValue = book.category || book.genre || 'Unknown';
+        
+        console.log("📋 Creating archived book with genre:", genreValue);
+        
+        const archivedBook = new ArchivedBook({
+          title: book.title,
+          year: book.year,
+          author: book.author,
+          publisher: book.publisher,
+          category: book.category,
+          genre: genreValue, // REQUIRED - use category as fallback
+          image: book.image,
+          accessionNumber: book.accessionNumber,
+          callNumber: book.callNumber,
+          location: book.location,
+          status: 'Archived',
+          archivedAt: new Date(),
+          originalBookId: book._id
+        });
 
-      await archivedBook.save();
-      console.log("✅ Archived book saved:", archivedBook._id);
+        console.log("💾 Saving archived book record...");
+        await archivedBook.save();
+        console.log("✅ Archived book saved:", archivedBook._id);
 
-      // Delete from regular books
-      await Book.findByIdAndDelete(req.params.id);
-      console.log("✅ Original book deleted from Books collection");
+        // Delete from regular books
+        console.log("🗑️ Deleting original book from Books collection...");
+        const deletedBook = await Book.findByIdAndDelete(bookId);
+        console.log("✅ Original book deleted:", deletedBook ? deletedBook.title : 'failed to delete');
 
-      res.status(200).json({
-        message: 'Book archived successfully',
-        book: archivedBook,
-      });
+        // Log the archive action
+        await new Log({
+          userEmail: req.body.userEmail || 'admin',
+          action: `Archived book: ${book.title} (Accession: ${book.accessionNumber})`
+        }).save();
+        console.log("📝 Archive logged");
+
+        res.status(200).json({
+          message: 'Book archived successfully',
+          book: archivedBook,
+        });
+      } catch (saveErr) {
+        console.error("❌ Error saving archived book:", saveErr.message);
+        console.error("❌ Validation errors:", saveErr.errors);
+        throw saveErr;
+      }
     } else {
-      // Regular status update
+      // Regular status update (not archiving)
+      console.log("📝 Updating book status to:", req.body.status);
       book.status = req.body.status;
       await book.save();
 
@@ -339,8 +366,16 @@ router.put('/archive/:id', async (req, res) => {
     }
 
   } catch (err) {
-    console.error("❌ Error archiving book:", err);
-    res.status(500).json({ error: 'Error archiving book: ' + err.message });
+    console.error("❌ Error in archive route:", err);
+    console.error("❌ Error details:", {
+      message: err.message,
+      stack: err.stack,
+      mongooseError: err.errors ? Object.keys(err.errors) : 'none'
+    });
+    res.status(500).json({ 
+      error: 'Error archiving book: ' + err.message,
+      details: process.env.NODE_ENV === 'development' ? err.toString() : undefined
+    });
   }
 });
 
