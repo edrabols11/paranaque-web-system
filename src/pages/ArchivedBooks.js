@@ -16,17 +16,20 @@ const ArchivedBooks = () => {
   useEffect(() => {
     const fetchArchivedBooks = async () => {
       try {
-        const res = await fetch('https://paranaledge-y7z1.onrender.com/api/books?status=Archived');
+        console.log("📚 Fetching archived books...");
+        const res = await fetch('https://paranaledge-y7z1.onrender.com/api/books/archived/all');
         const data = await res.json();
+        console.log("📚 Archived books response:", data);
         if (res.ok) {
-          setArchivedBooks(data.books);
-          setFilteredBooks(data.books);
+          setArchivedBooks(data.books || []);
+          setFilteredBooks(data.books || []);
+          setError(null);
         } else {
           setError(data.error || "Failed to fetch archived books.");
         }
       } catch (err) {
-        setError("Error fetching archived books.");
-        console.error(err);
+        setError("Error fetching archived books: " + err.message);
+        console.error("❌ Error fetching archived books:", err);
       }
     };
 
@@ -49,21 +52,23 @@ const ArchivedBooks = () => {
   const handleDelete = async (bookId) => {
     if (window.confirm("Are you sure you want to permanently delete this book?")) {
       try {
-        const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/books/${bookId}`, {
+        console.log("🗑️ Permanently deleting archived book:", bookId);
+        const res = await fetch(`https://paranaledge-y7z1.onrender.com/api/books/archived/${bookId}`, {
           method: "DELETE",
         });
         const data = await res.json();
+        console.log("Delete response:", res.status, data);
         if (res.ok) {
           const updatedList = archivedBooks.filter((book) => book._id !== bookId);
           setArchivedBooks(updatedList);
           setFilteredBooks(updatedList);
-          alert("Book deleted successfully!");
+          alert("✅ Book deleted permanently!");
         } else {
-          alert(data.error || "Failed to delete book.");
+          alert("❌ " + (data.error || "Failed to delete book."));
         }
       } catch (err) {
-        alert("Error deleting book.");
-        console.error(err);
+        alert("❌ Error deleting book: " + err.message);
+        console.error("❌ Error deleting book:", err);
       }
     }
   };

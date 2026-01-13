@@ -910,11 +910,38 @@ router.get('/borrowed', async (req, res) => {
 // Get all archived books
 router.get('/archived/all', async (req, res) => {
   try {
-    const archivedBooks = await ArchivedBook.find();
+    console.log("📚 Fetching all archived books...");
+    const archivedBooks = await ArchivedBook.find().sort({ archivedAt: -1 });
+    console.log(`✅ Found ${archivedBooks.length} archived books`);
     res.status(200).json({ books: archivedBooks });
   } catch (err) {
-    console.error("Error fetching archived books:", err);
-    res.status(500).json({ error: "Error fetching archived books" });
+    console.error("❌ Error fetching archived books:", err);
+    res.status(500).json({ error: "Error fetching archived books: " + err.message });
+  }
+});
+
+// Delete an archived book permanently
+router.delete('/archived/:id', async (req, res) => {
+  try {
+    console.log("🗑️ Deleting archived book with ID:", req.params.id);
+    const deletedBook = await ArchivedBook.findByIdAndDelete(req.params.id);
+    
+    if (!deletedBook) {
+      console.log("❌ Archived book not found with ID:", req.params.id);
+      return res.status(404).json({ error: 'Archived book not found' });
+    }
+    
+    console.log("✅ Archived book deleted:", deletedBook.title);
+    res.status(200).json({ 
+      message: 'Archived book deleted successfully',
+      deletedBook: {
+        _id: deletedBook._id,
+        title: deletedBook.title
+      }
+    });
+  } catch (err) {
+    console.error("❌ Error deleting archived book:", err);
+    res.status(500).json({ error: 'Error deleting archived book: ' + err.message });
   }
 });
 
