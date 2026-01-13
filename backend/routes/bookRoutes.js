@@ -389,6 +389,7 @@ router.put('/archive/:id', async (req, res) => {
     console.log("  - Location:", book.location);
     
     // Create archived book
+    // Note: Make sure to provide only the fields needed, avoid extra properties
     const archivedBook = new ArchivedBook({
       title: titleValue,
       year: yearValue,
@@ -397,9 +398,13 @@ router.put('/archive/:id', async (req, res) => {
       category: book.category || '',
       genre: genreValue,
       image: book.image || null,
-      accessionNumber: book.accessionNumber || '',
-      callNumber: book.callNumber || '',
-      location: book.location || {},
+      accessionNumber: book.accessionNumber ? book.accessionNumber.trim() : '',
+      callNumber: book.callNumber ? book.callNumber.trim() : '',
+      location: book.location && typeof book.location === 'object' ? {
+        genreCode: book.location.genreCode || undefined,
+        shelf: book.location.shelf || undefined,
+        level: book.location.level || undefined
+      } : {},
       status: 'Archived',
       archivedAt: new Date(),
       originalBookId: book._id
@@ -421,9 +426,23 @@ router.put('/archive/:id', async (req, res) => {
         `${k}: ${validationError.errors[k].message}`
       ).join('; ');
       console.error("❌ Detailed validation errors:", errors);
+      console.error("❌ Object being validated:", JSON.stringify({
+        title: archivedBook.title,
+        year: archivedBook.year,
+        genre: archivedBook.genre,
+        author: archivedBook.author,
+        accessionNumber: archivedBook.accessionNumber,
+        callNumber: archivedBook.callNumber,
+        location: archivedBook.location
+      }, null, 2));
       return res.status(400).json({ 
         error: `Validation failed: ${errors}`,
-        details: validationError.errors
+        details: validationError.errors,
+        bookData: {
+          title: archivedBook.title,
+          year: archivedBook.year,
+          genre: archivedBook.genre
+        }
       });
     }
 
@@ -434,13 +453,26 @@ router.put('/archive/:id', async (req, res) => {
     } catch (saveErr) {
       console.error("❌ Save error:", saveErr.message);
       console.error("❌ Save error full:", saveErr);
+      console.error("❌ Error code:", saveErr.code);
+      console.error("❌ Error name:", saveErr.name);
       if (saveErr.errors) {
         console.error("❌ Mongoose validation errors on save:");
         Object.keys(saveErr.errors).forEach(field => {
           console.error(`  - ${field}: ${saveErr.errors[field].message}`);
         });
       }
-      throw saveErr;
+      // Return detailed error response
+      let errorDetails = saveErr.message;
+      if (saveErr.errors) {
+        errorDetails = Object.keys(saveErr.errors).map(k => 
+          `${k}: ${saveErr.errors[k].message}`
+        ).join('; ');
+      }
+      return res.status(500).json({
+        error: `Failed to save archived book: ${errorDetails}`,
+        errorType: saveErr.name,
+        errorCode: saveErr.code
+      });
     }
 
     // Delete original book
