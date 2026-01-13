@@ -7,33 +7,47 @@ const ArchivedBook = require('../models/ArchivedBook');
 const Transaction = require('../models/Transaction');
 const Log = require('../models/Log');
 const ReservedBook = require('../models/ReservedBook');
+const Counter = require('../models/Counter');
 const { uploadBase64ToSupabase, getFullImageUrl } = require('../utils/upload');
 
 const router = express.Router();
 
-// Function to get next accession number (using a simple sequential approach)
+// Function to get next accession number using Counter model (uniform incrementation with DDC format)
 const getNextAccessionNumber = async () => {
   try {
     console.log("🔢 Starting accession number generation...");
     
-    // Count total books to generate next sequence number
-    const totalBooks = await Book.countDocuments({});
-    console.log("📊 Total books in database:", totalBooks);
+    // Get or create counter for accession numbers
+    let counter = await Counter.findOne({ name: 'accessionNumber' });
     
-    const nextNumber = totalBooks + 1;
-    console.log("📈 Next number calculated:", nextNumber);
+    if (!counter) {
+      console.log("📊 Counter not found, initializing...");
+      counter = new Counter({ name: 'accessionNumber', value: 0 });
+      await counter.save();
+    }
     
-    // Format as 6-digit zero-padded number (e.g., 000001, 000002, etc.)
-    const formattedNumber = String(nextNumber).padStart(6, '0');
-    console.log(`✅ Generated accession number: ${formattedNumber}`);
+    // Increment the counter
+    counter.value += 1;
+    await counter.save();
     
-    return formattedNumber;
+    console.log("📈 Next counter value:", counter.value);
+    
+    // Format as DDC-style accession number: YYYY-XXXX (Year-Sequence)
+    // Example: 2026-0001, 2026-0002, etc.
+    const currentYear = new Date().getFullYear();
+    const sequenceNumber = String(counter.value).padStart(4, '0');
+    const accessionNumber = `${currentYear}-${sequenceNumber}`;
+    
+    console.log(`✅ Generated accession number: ${accessionNumber}`);
+    
+    return accessionNumber;
   } catch (err) {
     console.error('❌ Error in getNextAccessionNumber:', err.message);
     console.error('❌ Stack:', err.stack);
     
     // Fallback: use timestamp-based number if counting fails
-    const fallback = String(Date.now()).slice(-6);
+    const currentYear = new Date().getFullYear();
+    const fallback = `${currentYear}-${String(Date.now()).slice(-4)}`;
     console.log('⚠️  Using fallback accession number:', fallback);
     return fallback;
   }
@@ -993,20 +1007,29 @@ router.get('/diagnostic/images', async (req, res) => {
   }
 });
 
-// Admin endpoint to fix accession numbers for existing books
+// Admin endpoint to fix accession numbers for existing books using Counter model
 router.post('/admin/fix-accession-numbers', async (req, res) => {
   try {
+    // Reset the counter
+    await Counter.findOneAndUpdate(
+      { name: 'accessionNumber' },
+      { value: 0 },
+      { upsert: true }
+    );
+    
     // Get all books, sorted by creation date
     const books = await Book.find({}).sort({ createdAt: 1 });
     
     console.log(`📚 Fixing accession numbers for ${books.length} books`);
     
     let counter = 0;
+    const currentYear = new Date().getFullYear();
     const updatePromises = [];
     
     for (const book of books) {
       counter++;
-      const newAccessionNumber = String(counter).padStart(6, '0');
+      const sequenceNumber = String(counter).padStart(4, '0');
+      const newAccessionNumber = `${currentYear}-${sequenceNumber}`;
       updatePromises.push(
         Book.findByIdAndUpdate(book._id, { accessionNumber: newAccessionNumber })
       );
@@ -1014,11 +1037,18 @@ router.post('/admin/fix-accession-numbers', async (req, res) => {
     
     await Promise.all(updatePromises);
     
-    console.log("✅ Fixed accession numbers for", counter, "books");
+    // Update counter to reflect the fixed numbers
+    await Counter.findOneAndUpdate(
+      { name: 'accessionNumber' },
+      { value: counter }
+    );
+    
+    console.log("✅ Fixed accession numbers for", counter, "books in DDC format");
     
     res.json({
-      message: 'Accession numbers fixed successfully',
-      booksFixed: counter
+      message: 'Accession numbers fixed successfully in DDC format (YYYY-XXXX)',
+      booksFixed: counter,
+      format: `${currentYear}-0001 to ${currentYear}-${String(counter).padStart(4, '0')}`
     });
   } catch (err) {
     console.error('❌ Error fixing accession numbers:', err);
