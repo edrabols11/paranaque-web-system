@@ -17,8 +17,16 @@ const getNextAccessionNumber = async () => {
   try {
     console.log("🔢 Starting accession number generation...");
     
+    // First, ensure the counter exists
+    let counter = await Counter.findOne({ name: 'accessionNumber' });
+    if (!counter) {
+      console.log("🔢 Counter for accessionNumber not found, creating it...");
+      counter = await Counter.create({ name: 'accessionNumber', value: 0 });
+      console.log("🔢 Created accession counter:", counter);
+    }
+    
     // Use atomic findOneAndUpdate with MongoDB's $inc operator
-    const counter = await Counter.findOneAndUpdate(
+    const updatedCounter = await Counter.findOneAndUpdate(
       { name: 'accessionNumber' },
       { $inc: { value: 1 } },
       { 
@@ -27,13 +35,13 @@ const getNextAccessionNumber = async () => {
       }
     ).maxTimeMS(5000); // Add timeout to prevent hanging
     
-    console.log("📈 Counter object:", counter);
+    console.log("📈 Counter object:", updatedCounter);
     
-    if (!counter) {
+    if (!updatedCounter) {
       throw new Error('Counter returned null or undefined');
     }
     
-    const counterValue = counter.value || 1;
+    const counterValue = updatedCounter.value || 1;
     console.log("📈 Counter value:", counterValue);
     
     // Format as DDC-style accession number: YYYY-XXXX (Year-Sequence)
