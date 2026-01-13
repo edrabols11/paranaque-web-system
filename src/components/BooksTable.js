@@ -13,8 +13,8 @@ const BooksTable = () => {
   const [editForm, setEditForm] = useState({});
 
   useEffect(() => {
-    fetchReservedBooks();
-  }, []);
+    console.log("🔍 BooksTable state - showAddBookModal:", showAddBookModal);
+  }, [showAddBookModal]);
 
   const fetchReservedBooks = async () => {
     try {
@@ -280,7 +280,16 @@ const BooksTable = () => {
                 >
                   ×
                 </button>
-                <AddBook onBookAdded={() => { console.log("📖 Book added, closing modal"); setShowAddBookModal(false); }} />
+                <div style={{ visibility: 'visible', display: 'block' }}>
+                  {console.log("📖 Rendering AddBook component")}
+                  <AddBook 
+                    onBookAdded={() => { 
+                      console.log("📖 Book added, closing modal"); 
+                      setShowAddBookModal(false);
+                      fetchReservedBooks();
+                    }} 
+                  />
+                </div>
               </div>
             </div>
           )}

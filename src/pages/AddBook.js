@@ -198,6 +198,7 @@ const AddBook = ({ onBookAdded }) => {
 
   return (
     <div className="add-book-container" style={styles.container}>
+      {console.log("📝 AddBook component rendering")}
       <img src={logo} alt="Library Logo" style={styles.logo} />
 
       <h2 style={styles.title}>Add a Book</h2>
